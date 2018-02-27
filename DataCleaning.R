@@ -9,34 +9,50 @@
 
 ##### Read in euk files, not filtered #####
 
-#first read in otu table and taxonomy file as txt, then merge
+#first read in otu table and taxonomy file as txt, then merge (because the OTU table does not have taxonomy in it)
 
 otufileEuk<-read.table("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table2.txt",header=T)
 
 head(otufileEuk)
 
+#6 ranks
 taxonomyfileEuk<-read.csv("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-taxonomy/taxonomy2.csv",header=T)
+
+#all ranks
+taxonomyfileEuk<-read.csv("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-taxonomy2/taxonomy2.csv",header=T)
+
+taxonomyfileEuk[which(taxonomyfileEuk$Confidence>.7&taxonomyfileEuk$Confidence<.72),]
+
+#“Confidence” is the fraction of top hits that match the consensus taxonomy (at whatever level is provided)
 
 head(taxonomyfileEuk)
 colnames(taxonomyfileEuk)[1]<-"OTUID"
 colnames(taxonomyfileEuk)[2]<-"taxonomy"
 
 otufileEuk2<-merge(otufileEuk,taxonomyfileEuk,"OTUID")
-otufileEuk2<-otufileEuk2[,-287]
+otufileEuk2<-otufileEuk2[,-dim(otufileEuk2)[2]] #delete the last column which is confidence in taxonomy
 head(otufileEuk2)
 
 dim(otufileEuk)
 dim(otufileEuk2)
 dim(taxonomyfileEuk)
 
-min(otufileEuk2$Confidence)
+#min(otufileEuk2$Confidence)
 
+#Write it to a text file so that you can convert it to biom, which can then be import back into R using import_biom()
+#6 ranks only euks
 write.table(otufileEuk2,"/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table3.txt",sep="\t",row.names = F)
+
+#all ranks and all taxa
+write.table(otufileEuk2,"/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table4.txt",sep="\t",row.names = F)
 
 #open otu_table3 in excel and add '#OTU ID' as first cell name
 biom convert -i otu_table3.txt -o otu_table3.biom --to-hdf5 --table-type="OTU table" --process-obs-metadata taxonomy
 
+biom convert -i otu_table4.txt -o otu_table4.biom --to-hdf5 --table-type="OTU table" --process-obs-metadata taxonomy
+
 otuEuk <- import_biom("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table3.biom",parseFunction = parse_taxonomy_greengenes)
+otuEuk <- import_biom("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table4.biom",parseFunction = parse_taxonomy_greengenes)
 
 head(otu_table(otuEuk))
 head(tax_table(otuEuk))
@@ -51,21 +67,32 @@ datEuk<-merge_phyloseq(otuEuk,mapEuk,treeEuk)
 
 
 
-##Filter, filter only soil samples, take out plants, fungi, metazoa, 
+##Filter, filter only soil samples, take out bacteria, unassigned, plants, fungi, metazoa, take out singletons
+#I think I should try blasting against the database with all levels not just 6. and I could try blasting against the entire database, not just eukaryotes
+#in the previous bioinformatics pipeline all taxa had at least three levels (euk;class;"uncultured euk"). Many of the taxa here are only "eukaryote". So I might want to try downloading the older silva database and using that to see if I can replicate, or I can just delete all the "Euk" only assignments (there are rows that are labeled "unassigned" too that I should remove)
 
+#note!!!! if you filter with subset_taxa and a !=, it will NOT return any rows that are NA, so you always have to do an "or NA" in the statement
 datEukS<-datEuk%>%
   subset_samples(SampleType=="soil")%>%
-  subset_taxa(Rank4!="D_3__Fungi")%>%
-  subset_taxa(Rank4!="D_3__Fungi")%>%
-  subset_taxa(Rank4!="D_3__Metazoa(Animalia)")
-
+  subset_taxa(is.na(Rank1)==T|Rank1!="D_0__Bacteria")%>%
+  subset_taxa(is.na(Rank1)==T|Rank1!="Unassigned")%>%
+  subset_taxa(is.na(Rank2)==T)%>%
+  subset_taxa(is.na(Rank4)==T|Rank4!="D_3__Fungi")%>%
+  subset_taxa(is.na(Rank4)==T|Rank4!="D_3__Metazoa(Animalia)")%>%
+  subset_taxa(is.na(Rank7)==T|Rank7!="D_6__Embryophyta")%>%
+  filter_taxa(function(x) sum(x) > (0), prune=T)
 
 head(sample_data(datEuk))
 head(tax_table(datEukS))
-sort(unique(tax_table(datEukS)[,"Rank4"]))
+sort(unique(tax_table(datEukS)[,"Rank13"]))
 
-datEukS<-subset_taxa(datEukS, Rank4!="D_3__Fungi")
-__Embryophyta
+which(is.na(tax_table(datEukS)[,"Rank2"]))
+
+which(rownames(tax_table(datEukS))=="4aa2683228e211ebc675c3e3aff083c8")
+tax_table(datEukS)[2504,]
+
+
+
 
 
 
