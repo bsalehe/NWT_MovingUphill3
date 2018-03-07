@@ -16,12 +16,15 @@ otufileEuk<-read.table("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwo
 head(otufileEuk)
 
 #6 ranks
-taxonomyfileEuk<-read.csv("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-taxonomy/taxonomy2.csv",header=T)
+#taxonomyfileEuk<-read.csv("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-taxonomy/taxonomy2.csv",header=T)
 
-#all ranks
-taxonomyfileEuk<-read.csv("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-taxonomy2/taxonomy2.csv",header=T)
+#all ranks, consensus, not truncated, all taxa
+taxonomyfileEuk<-read.csv("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-taxonomy5/taxonomy2.csv",header=T)
 
-taxonomyfileEuk[which(taxonomyfileEuk$Confidence>.7&taxonomyfileEuk$Confidence<.72),]
+#taxonomyfileEuk[which(taxonomyfileEuk$Confidence>.7&taxonomyfileEuk$Confidence<.72),]
+#taxonomyfileEuk[which(taxonomyfileEuk$Confidence<.7),"Taxon"] #all taxa with <.7 confidence are classified as unassigned 
+#taxonomyfileEuk[4,]
+#hist(taxonomyfileEuk$Confidence)
 
 #“Confidence” is the fraction of top hits that match the consensus taxonomy (at whatever level is provided)
 
@@ -41,18 +44,25 @@ dim(taxonomyfileEuk)
 
 #Write it to a text file so that you can convert it to biom, which can then be import back into R using import_biom()
 #6 ranks only euks
-write.table(otufileEuk2,"/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table3.txt",sep="\t",row.names = F)
+#write.table(otufileEuk2,"/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table3.txt",sep="\t",row.names = F)
 
 #all ranks and all taxa
-write.table(otufileEuk2,"/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table4.txt",sep="\t",row.names = F)
+#write.table(otufileEuk2,"/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table4.txt",sep="\t",row.names = F)
+
+#all ranks and all taxa, consensus, not truncated
+#write.table(otufileEuk2,"/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table5.txt",sep="\t",row.names = F)
 
 #open otu_table3 in excel and add '#OTU ID' as first cell name
-biom convert -i otu_table3.txt -o otu_table3.biom --to-hdf5 --table-type="OTU table" --process-obs-metadata taxonomy
+#biom convert -i otu_table3.txt -o otu_table3.biom --to-hdf5 --table-type="OTU table" --process-obs-metadata taxonomy
 
-biom convert -i otu_table4.txt -o otu_table4.biom --to-hdf5 --table-type="OTU table" --process-obs-metadata taxonomy
+#biom convert -i otu_table4.txt -o otu_table4.biom --to-hdf5 --table-type="OTU table" --process-obs-metadata taxonomy
 
-otuEuk <- import_biom("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table3.biom",parseFunction = parse_taxonomy_greengenes)
-otuEuk <- import_biom("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table4.biom",parseFunction = parse_taxonomy_greengenes)
+biom convert -i otu_table5.txt -o otu_table5.biom --to-hdf5 --table-type="OTU table" --process-obs-metadata taxonomy
+
+#otuEuk <- import_biom("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table3.biom",parseFunction = parse_taxonomy_greengenes)
+#otuEuk <- import_biom("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table5.biom",parseFunction = parse_taxonomy_greengenes)
+otuEuk <- import_biom("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/QIIME2/Euks/exported-table/otu_table4.biom",parseFunction = parse_taxonomy_default)
+#I'm not sure what the differences is between parse tax greensgenes and default, the warnigns toldme to use default
 
 head(otu_table(otuEuk))
 head(tax_table(otuEuk))
@@ -66,30 +76,63 @@ treeEuk<-read_tree("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_Ki
 datEuk<-merge_phyloseq(otuEuk,mapEuk,treeEuk)
 
 
-
-##Filter, filter only soil samples, take out bacteria, unassigned, plants, fungi, metazoa, take out singletons
+##### Euk Soil #####
+##Filter, filter only soil samples, 2015, take out bacteria, unassigned, plants, fungi, metazoa, take out singletons
 #I think I should try blasting against the database with all levels not just 6. and I could try blasting against the entire database, not just eukaryotes
-#in the previous bioinformatics pipeline all taxa had at least three levels (euk;class;"uncultured euk"). Many of the taxa here are only "eukaryote". So I might want to try downloading the older silva database and using that to see if I can replicate, or I can just delete all the "Euk" only assignments (there are rows that are labeled "unassigned" too that I should remove)
+#in the previous bioinformatics pipeline all taxa had at least three levels (euk;class;"uncultured euk"). Many of the taxa here are only "eukaryote". So I might want to try downloading the older silva database and using that to see if I can replicate, or I can just delete all the "Euk" only assignments (there are rows that are labeled "unassigned" too that I should remove). I think the problem here was the BLAST assign taxonomy difference, not the database
 
 #note!!!! if you filter with subset_taxa and a !=, it will NOT return any rows that are NA, so you always have to do an "or NA" in the statement
 datEukS<-datEuk%>%
-  subset_samples(SampleType=="soil")%>%
+  subset_samples(SampleType=="soil"&year==2015)%>%
   subset_taxa(is.na(Rank1)==T|Rank1!="D_0__Bacteria")%>%
   subset_taxa(is.na(Rank1)==T|Rank1!="Unassigned")%>%
-  subset_taxa(is.na(Rank2)==T)%>%
+  #subset_taxa(is.na(Rank2)==F)%>% #this takes out the Eukaryota;__ taxa, I could or not take them out. they are at least real in the sense that they are not blasting to bacteria, but they could be artifacts (i.e. primer errors). I'll leave them in for now
   subset_taxa(is.na(Rank4)==T|Rank4!="D_3__Fungi")%>%
   subset_taxa(is.na(Rank4)==T|Rank4!="D_3__Metazoa(Animalia)")%>%
   subset_taxa(is.na(Rank7)==T|Rank7!="D_6__Embryophyta")%>%
-  filter_taxa(function(x) sum(x) > (0), prune=T)
+  filter_taxa(function(x) sum(x) > (1), prune=T) #there are no singletons, odd, but I think that is what DADA2 does, it works with repeated samples to identify errors
+datEukS
 
-head(sample_data(datEuk))
+#using the euk only database, there is roughtly the same number of euk;__ taxa as from the all database euk;__+unassigned taxa
+#4168/12475 are euk;__
+#5789/12475
+#1522 (unassigned)+4168 euk=5690
+
+head(sample_data(datEukS))
 head(tax_table(datEukS))
-sort(unique(tax_table(datEukS)[,"Rank13"]))
+sort(unique(tax_table(datEukS)[,"Rank3"]))
 
-which(is.na(tax_table(datEukS)[,"Rank2"]))
+length(which(is.na(tax_table(datEukS)[,"Rank2"])))
+#1629 of the 4068 taxa are just assigned euk;__
 
-which(rownames(tax_table(datEukS))=="4aa2683228e211ebc675c3e3aff083c8")
-tax_table(datEukS)[2504,]
+#sample 61 has 681 reads, next sample76 has 946 reads, so could delete 61
+min(sample_sums(datEukS))
+sort(sample_sums(datEukS))
+
+
+
+###### Euk Nematode Samples #####
+##Filter, filter only nematode samples, filter sample 2A (duplicate), only metazoa, take out craniata (chordata here, chordata is a higher level than craniata but the only chordata here are vertebrates), take out singletons (there are none)
+datEukN<-datEuk%>%
+  subset_samples(SampleType=="nematode"&X.SampleID!="N.2A.2015")%>%
+  subset_taxa(Rank4=="D_3__Metazoa(Animalia)")%>%
+  subset_taxa(is.na(Rank7)==T|Rank7!="D_6__Chordata")%>%
+  filter_taxa(function(x) sum(x) > 1, prune=T) 
+datEukN
+
+head(sample_data(datEukS))
+head(tax_table(datEukS))
+sort(unique(tax_table(datEukN)[,"Rank7"]))
+
+tax_table(datEukN)[which(tax_table(datEukN)[,"Rank7"]=="D_6__Chordata"),]
+
+#sample 61 has 681 reads, next sample76 has 946 reads, so delete 61
+min(sample_sums(datEukS))
+sort(sample_sums(datEukS))
+
+#sample 78 has only 70 reads so delete; however this could be true b/c 78 is a zero plant plot so there are probably not a lot of nematodes, next sample 3 has 700 (3 is also a zero plant plot), next 83 has 2038 (also zero plants)
+min(sample_sums(datEukN))
+sort(sample_sums(datEukN))
 
 
 
@@ -116,34 +159,6 @@ datEukN3 <- prune_samples(sample_names(datEukN2)!="N.78.2015", datEukN2)
 datEukS2 <- prune_samples(sample_names(datEukS)!="S.61.2015", datEukS)
 
 
-
-###########for Dorota's nematode ms############
-#read in file with metazoa
-DEukS<-import_biom("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Euks/Euk_ALL_97_S111_OTU_tablefiltsingnonchimericbactarcplantEukSoil2015.biom")
-DEukS2<-merge_phyloseq(DEukS,mapEuk)
-
-#Filter out fungi and nematodes then calcualte Chao1 on the 18S data
-which(tax_table(DEukS2)[,4]=="__Nematoda")
-which(tax_table(DEukS2)[,3]=="__Fungi")
-#which(tax_table(DEukS2)[,4]=="__Arthropoda")
-DEukS3<-subset_taxa(DEukS2, Rank4!="__Nematoda")
-DEukS4<-subset_taxa(DEukS3, Rank3!="__Fungi")
-
-#filter singletons
-DEukS5<-prune_taxa(taxa_sums(DEukS4) > 1, DEukS4)
-
-#filter plot with only 541 reads
-DEukS6 <- prune_samples(sample_names(DEukS5)!="S.61.2015", DEukS5)
-
-#rarefy
-sort(sample_sums(DEukS6))#rarefy to 938
-DEukS7<-rarefy_even_depth(DEukS6,sample.size=min(sample_sums(DEukS6)),rngseed=10,replace=F) #
-
-#calculate Chao1
-DChao1<-estimate_richness(DEukS7, measures=c("Chao1", "Shannon","Observed"))
-DChao1a<-DChao1[order(rownames(DChao1)),]
-write.csv(DChao1a,"/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Euks/18SChao1nofungiornematodesforDorota.csv",row.names=T)
-#####################
 
 
 #rarefy and transform to relative abundance
