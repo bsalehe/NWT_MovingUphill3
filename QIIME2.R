@@ -44,7 +44,7 @@ https://github.com/qiime2/q2-dada2/issues/48
 
 ##### Taxonomic databases #####
 
-#####Silva#####
+##### Silva #####
 #notes about the silva release: https://www.arb-silva.de/fileadmin/silva_databases/qiime/Silva_128_notes.txt
 #workflow from this thread: https://forum.qiime2.org/t/18s-classifier-using-silva-database-and-emb-primers/361
 
@@ -109,7 +109,7 @@ qiime tools import \
 --input-path SILVA_128_QIIME_release/taxonomy/taxonomy_all/99/taxonomy_all_levels.tsv \
 --output-path all_SILVA128_99_taxonomy_plain.qza
 
-##### Extract EMBP variable regio for 18S #####
+##### Extract EMBP variable region for 18S #####
 #I'm not entirely sure what length to use, probably should use the max length from my euk data below (which is generally less than 150, except there are about 2000 reads per sample that are 301) or 150, since that is exactly what the person writing this workflow used. update: with paired end data, trunc-len should not be used (set at default 0), see below
 #start 7:12, end 7:17
 qiime feature-classifier extract-reads \
@@ -127,7 +127,7 @@ qiime feature-classifier extract-reads \
 --p-trunc-len 150 \
 --o-reads ref-seqs_all_99_SILVA128_RL150.qza
 
-#Try it wihtout the 150 truncation (default is 0). post saying that you shouldn't truncate with paired end data: https://forum.qiime2.org/t/how-can-i-train-classifier-for-paired-end-reads/1512/7, start 1:32pm, end 2:14pm
+#Try it wihtout the 150 truncation (default is 0). post saying that you shouldn't truncate with paired end data: https://forum.qiime2.org/t/how-can-i-train-classifier-for-paired-end-reads/1512/7, I think truncation is for when you have only a forward read and it is a particular length, start 1:32pm, end 2:14pm
 ##USE THIS
 qiime feature-classifier extract-reads \
 --i-sequences all_SILVA128_99_otus.qza \
@@ -215,7 +215,7 @@ qiime feature-classifier fit-classifier-naive-bayes \
 #They suggest not trimming the ref sequences prior to training the sklearn classifier for ITS: https://forum.qiime2.org/t/working-with-its-data-on-a-supercomputer-server/1061/15
 
 ##Train classifier
-#start 9:25ish am, end (laptop)
+#start 9:25ish am, end 11:28pm (laptop)
 #start 5:21pm (office)
 qiime feature-classifier fit-classifier-naive-bayes \
 --i-reference-reads all_SILVA128_99_otus.qza \
@@ -223,6 +223,94 @@ qiime feature-classifier fit-classifier-naive-bayes \
 --o-classifier all_EMB_SILVA128_classifier.qza
 
 
+
+##### Greengenes database ######
+qiime tools import \
+--type 'FeatureData[Sequence]' \
+--input-path gg_13_8_otus/rep_set/99_otus.fasta \
+--output-path gg_13_8_otus_99_otus.qza
+
+#Import taxonomy
+#Need to duplicate and save the txt file as tsv
+qiime tools import \
+--type 'FeatureData[Taxonomy]' \
+--source-format HeaderlessTSVTaxonomyFormat \
+--input-path gg_13_8_otus/taxonomy/99_otu_taxonomy.tsv \
+--output-path gg_13_8_otus_99_taxonomy.qza
+
+#start 3:07pm end 3:24pm
+qiime feature-classifier extract-reads \
+--i-sequences gg_13_8_otus_99_otus.qza \
+--p-f-primer GTGYCAGCMGCCGCGGTAA \
+--p-r-primer GGACTACNVGGGTWTCTAAT \
+--o-reads ref-seqs_all_99_gg_13_8.qza
+
+#export to see what it trimmed
+qiime tools export \
+ref-seqs_all_99_gg_13_8.qza \
+--output-dir exported-ref-seqs_all_99_gg_13_8
+
+cd exported-ref-seqs_all_99_gg_13_8
+awk '{print length}' dna-sequences.fasta | sort | uniq -c
+#Most lengths are 253, there are some longer and shorter from about 251-257
+
+##Train classifier
+#start 3:35pm, end 3:42pm
+qiime feature-classifier fit-classifier-naive-bayes \
+--i-reference-reads ref-seqs_all_99_gg_13_8.qza \
+--i-reference-taxonomy gg_13_8_otus_99_taxonomy.qza \
+--o-classifier all_EMB_gg_13_8_classifier.qza
+
+
+
+
+
+##### UNITE database #####
+#I downloaded the file 12_11 alpha release from the qiime page here: http://qiime.org/home_static/dataFiles.html I didn't see it on th unite website...
+#tutorial https://github.com/gregcaporaso/2017.06.23-q2-fungal-tutorial
+
+#Import OTUs
+
+#Error
+
+#First correct some lowercase bp letters:
+  grep 'a' 99_otus.fasta 
+#https://forum.qiime2.org/t/plugin-error-feature-classifier-classify-sklearn/1532/2
+tr 'acgt' 'ACGT' < 99_otus.fasta > 99_otus_uppercase.fasta 
+
+#Then change the '_' to '-' note: i am assuming this is what _ means, it is at the beginning of one read and end of another read in the file
+tr '_' '-' < 99_otus_uppercase.fasta > 99_otus_uppercase2.fasta 
+
+#delete the lines with: '\x0b' and the header before it
+#grep -v "\x0b" 99_otus_uppercase2.fasta > 99_otus_uppercase3.fasta #Only deletes the sequenc line
+#arg i coudl just use an older release that actually works
+
+#start 8:49pm, end 8:49
+qiime tools import \
+--type 'FeatureData[Sequence]' \
+--input-path its_12_11_otus/rep_set/99_otus_uppercase3.fasta \
+--output-path UNITE_12_11_99_otus.qza
+
+#Import taxonomy
+qiime tools import \
+--type 'FeatureData[Taxonomy]' \
+--source-format HeaderlessTSVTaxonomyFormat \
+--input-path its_12_11_otus/taxonomy/99_otu_taxonomy.txt \
+--output-path UNITE_12_11_99_taxonomy.qza
+
+#no need to extract reference region
+
+#train classifier
+#start 11:35pm
+qiime feature-classifier fit-classifier-naive-bayes \
+--i-reference-reads UNITE_12_11_99_otus.qza \
+--i-reference-taxonomy UNITE_12_11_99_taxonomy.qza \
+--o-classifier UNITE_12_11_99_classifier.qza
+
+#this release was messing up, so I downloaded an already trained classifir from unite here: https://forum.qiime2.org/t/unite-ver-7-2-2017-12-01-classifiers-for-qiime2-ver-2017-12-available-here/3020
+#She followed the emp protocol for training it
+
+unite-ver7-99-classifier-01.12.2017.qza
 
 
 ##### Euk #####
@@ -422,7 +510,7 @@ qiime feature-classifier classify-consensus-blast \
 --o-classification taxonomy4.qza
 
 #Fifth time with the non truncated classifier
-#stat 3:39, end 3:47
+#start 3:39, end 3:47
 ##USE THIS
 qiime feature-classifier classify-sklearn \
 --i-classifier all_EMB_SILVA128_classifier.qza \
@@ -784,6 +872,7 @@ rooted-tree.qza \
 
 ##### Assign taxonomy #####
 
+#using silva
 #my computer stalled after about 8 hrs with p-n-jobs -2 (which should mean all but one core), trying using fewer cores
 #start 8:55pm, end 7:59am
 qiime feature-classifier classify-sklearn \
@@ -796,6 +885,21 @@ qiime tools export \
 taxonomy.qza \
 --output-dir exported-taxonomy
 
+#using greengenes
+#start 3:45pm, end 4:03pm
+
+qiime feature-classifier classify-sklearn \
+--i-classifier all_EMB_gg_13_8_classifier.qza \
+--i-reads rep-seqs.qza \
+--p-n-jobs 2 \
+--o-classification taxonomy_gg.qza
+
+qiime tools export \
+taxonomy_gg.qza \
+--output-dir exported-taxonomy_gg
+
+
+
 #navegate to new directory, take out all spaces so it can be read into R (even the space in "unculutred eukaryote")
 sed 's/[ ]//' taxonomy.tsv > taxonomy2.tsv
 #then I still need to open the file in excel and save as a .csv - not sure why the import of the txt file is screwing up
@@ -807,6 +911,12 @@ qiime metadata tabulate \
 
 qiime tools view taxonomy.qzv
 
+qiime metadata tabulate \
+--m-input-file taxonomy_gg.qza \
+--o-visualization taxonomy_gg.qzv
+
+qiime tools view taxonomy_gg.qzv
+
 #visualize barplots
 qiime taxa barplot \
 --i-table table.qza \
@@ -816,6 +926,17 @@ qiime taxa barplot \
 
 qiime tools view taxa-bar-plots.qzv
 #nice! there are very few unassigned and very few assigned to bacteria;__
+
+qiime taxa barplot \
+--i-table table.qza \
+--i-taxonomy taxonomy_gg.qza \
+--m-metadata-file 515BC_Niwot_20072015_All_MapFilenewlomehinoN472015.tsv \
+--o-visualization taxa-bar-plots_gg.qzv
+
+qiime tools view taxa-bar-plots_gg.qzv
+#I like greengenes, there are fewer bacteria;__ and unassigned compared to silva
+
+
 
 
 
@@ -983,16 +1104,28 @@ qiime tools view rep-seqs.qzv
 
 
 ##### Assign taxonomy #####
-#start 8:48, end 
+#start 12:41pm, end 2:26pm
 qiime feature-classifier classify-sklearn \
 --i-classifier all_EMB_SILVA128_classifier.qza \
 --i-reads rep-seqs.qza \
---p-n-jobs -2 \
+--p-n-jobs 2 \
 --o-classification taxonomy.qza
+
+#start 8:50pm, end 9:07pm
+qiime feature-classifier classify-sklearn \
+--i-classifier unite-ver7-99-classifier-01.12.2017.qza \
+--i-reads rep-seqs.qza \
+--p-n-jobs 2 \
+--o-classification taxonomy_unite.qza
+
 
 qiime tools export \
 taxonomy.qza \
 --output-dir exported-taxonomy
+
+qiime tools export \
+taxonomy_unite.qza \
+--output-dir exported-taxonomy_unite
 
 #navegate to new directory, take out all spaces so it can be read into R (even the space in "unculutred eukaryote")
 sed 's/[ ]//' taxonomy.tsv > taxonomy2.tsv
@@ -1003,17 +1136,28 @@ qiime metadata tabulate \
 --m-input-file taxonomy.qza \
 --o-visualization taxonomy.qzv
 
+qiime metadata tabulate \
+--m-input-file taxonomy_unite.qza \
+--o-visualization taxonomy_unite.qzv
+
 qiime tools view taxonomy.qzv
-#this is not visualizing for some reason
+qiime tools view taxonomy_unite.qzv
 
 #visualize barplots
 qiime taxa barplot \
 --i-table table.qza \
 --i-taxonomy taxonomy.qza \
---m-metadata-file EukBr_Niwot_20072015_All_MapFilenewlomehi.tsv \
+--m-metadata-file ITS_Niwot_20072015_All_MapFilenewlomehi.tsv \
 --o-visualization taxa-bar-plots.qzv
 
+qiime taxa barplot \
+--i-table table.qza \
+--i-taxonomy taxonomy_unite.qza \
+--m-metadata-file ITS_Niwot_20072015_All_MapFilenewlomehi.tsv \
+--o-visualization taxa-bar-plots_unite.qzv
+
 qiime tools view taxa-bar-plots.qzv
+qiime tools view taxa-bar-plots_unite.qzv
 
 
 
@@ -1022,8 +1166,9 @@ qiime tools view taxa-bar-plots.qzv
 
 
 
-###### Processing only the forward reads #####
+###### ITS - Processing only the forward reads #####
 
+#in directory QIIME2/ITSsingle/
 #In the previous analysis with QIIME1, we just used the reverse read,I think b/c that is where the barcode was. Here i am using the forward read b/c it was better quality, there was one paper (in qiime2 directory) who also used that excuse to choose the forward read
 #importing only the forward read 
 #the sequences need to be called "sequences.fastq.gz"
@@ -1134,16 +1279,27 @@ qiime tools view rep-seqs.qzv
 
 
 ##### Assign taxonomy #####
-#start 8:48, end 
+#start 8:42pm, end 1:22 am
 qiime feature-classifier classify-sklearn \
---i-classifier all_EMB_SILVA128_classifier.qza \
+--i-classifier all_EMB_SILVA128_classifier1.qza \
 --i-reads rep-seqs.qza \
---p-n-jobs -2 \
+--p-n-jobs 2 \
 --o-classification taxonomy.qza
+
+#start 11:47pm, end 12:13 pm 
+qiime feature-classifier classify-sklearn \
+--i-classifier unite-ver7-99-classifier-01.12.2017.qza \
+--i-reads rep-seqs.qza \
+--p-n-jobs 2 \
+--o-classification taxonomy_unite.qza
 
 qiime tools export \
 taxonomy.qza \
 --output-dir exported-taxonomy
+
+qiime tools export \
+taxonomy_unite.qza \
+--output-dir exported-taxonomy_unite
 
 #navegate to new directory, take out all spaces so it can be read into R (even the space in "unculutred eukaryote")
 sed 's/[ ]//' taxonomy.tsv > taxonomy2.tsv
@@ -1154,19 +1310,417 @@ qiime metadata tabulate \
 --m-input-file taxonomy.qza \
 --o-visualization taxonomy.qzv
 
+qiime metadata tabulate \
+--m-input-file taxonomy_unite.qza \
+--o-visualization taxonomy_unite.qzv
+
 qiime tools view taxonomy.qzv
-#this is not visualizing for some reason
+qiime tools view taxonomy_unite.qzv
 
 #visualize barplots
 qiime taxa barplot \
 --i-table table.qza \
 --i-taxonomy taxonomy.qza \
---m-metadata-file EukBr_Niwot_20072015_All_MapFilenewlomehi.tsv \
+--m-metadata-file ITS_Niwot_20072015_All_MapFilenewlomehi.tsv \
 --o-visualization taxa-bar-plots.qzv
 
 qiime tools view taxa-bar-plots.qzv
 
+qiime taxa barplot \
+--i-table table.qza \
+--i-taxonomy taxonomy_unite.qza \
+--m-metadata-file ITS_Niwot_20072015_All_MapFilenewlomehi.tsv \
+--o-visualization taxa-bar-plots_unite.qzv
+
+qiime tools view taxa-bar-plots_unite.qzv
 
 
 
+
+###### ITS - Processing only the reverse reads #####
+
+#importing only the reverse read 
+#the sequences need to be called "sequences.fastq.gz"
+qiime tools import \
+--type EMPSingleEndSequences \
+--input-path emp-single-end-reverse-sequences \
+--output-path emp-single-end-reverse-sequences.qza
+
+###### Demultiplexing single reads ######
+#start 1:24pm, end 2:17
+qiime demux emp-single \
+--m-barcodes-file ITS_Niwot_20072015_All_MapFilenewlomehi.tsv \
+--m-barcodes-column BarcodeSequence \
+--i-seqs emp-single-end-reverse-sequences.qza \
+--o-per-sample-sequences demux \
+--p-rev-comp-mapping-barcodes
+
+#summarize
+qiime demux summarize \
+--i-data demux.qza \
+--o-visualization demux.qzv
+
+qiime tools view demux.qzv
+
+#export it so you can look inside at the files
+#started 8:54, end 9:08
+qiime tools export \
+demux.qza \
+--output-dir exported-demux
+
+#The amplicon size should be 230 bp (according to the earth microbiome website). So there will be primers in many reads.
+
+###### Trim primers/adapters ######
+#To get these adapters I looked in the raw sequence data and found and made sure they were there. for example, the adapter-f ended up being the reverse complement of the reverse primer
+#start 9:50am, end 9:58am
+qiime cutadapt trim-single \
+--i-demultiplexed-sequences demux.qza \
+--p-cores 4 \
+--p-adapter TTACTTCCTCTAAATGACCAAG \
+--o-trimmed-sequences trimmed-seqs.qza \
+--verbose
+
+#summarize
+qiime demux summarize \
+--i-data trimmed-seqs.qza \
+--o-visualization trimmed-seqs.qzv
+
+qiime tools view trimmed-seqs.qzv
+
+#export
+qiime tools export \
+trimmed-seqs.qza \
+--output-dir exported-trimmed-seqs
+
+#Getting a histogram of line lengths
+awk '{print length}' S.99.2015_141_L001_R1_001_copy.fastq | sort | uniq -c
+#lots of variability, but most around 234 (10,000 reads) and 301 (24834 reads)
+
+##### Denoising with DADA2 #####
+#I need to figure out if i need to trim things. if I wanted to use fastx_trimmer, I would have to see if it would work. Whe I used it before, I did it on the initial file from the sequencing company, prior to demultiplexing (a fastq file). I mgiht be able to do it on multiple files at a later stage (after demultiplexing), but then I'd have to figure out how to do it on many files (each sample individually) and then convert those file back to a qza file. Not impossible but maybe not worth it.
+#DADA2 webpage https://benjjneb.github.io/dada2/tutorial.html suggests not truncating if you're using ITS data b/c of the large variability in read lengths. Since DADA2 does take into account bp quality it should be fine. however if you can truncate it will increase sensitivity to rare variants.
+#at 229bp is when the median quality scores hit 25 - based on previous r script. using visualizaiton above, however the reads that are shorter than the truncation numbers are discarded, thus I should keep everything or do truncation prior to this step.
+#note for n-threads specifying 0 means use all cores
+#note for trunc-len specifying 0 means don't truncate
+#start 3:12pm, end 4:13 pm
+qiime dada2 denoise-single \
+--i-demultiplexed-seqs trimmed-seqs.qza \
+--o-table table \
+--o-representative-sequences rep-seqs \
+--p-n-threads 0 \
+--p-trim-left 0 \
+--p-trunc-len 0
+
+#export rep seqs just to take a look at. especially to look at how the long sequences got identified, I don't think I can look at this, since there isn't a file that has the ID DNA header, the sequence, and the feature ID in it
+qiime tools export \
+rep-seqs.qza \
+--output-dir exported-rep-seqs
+
+#to print the line with the longest number of characters:
+cat dna-sequences.fasta|awk '{print length, $0}'|sort -nr|head -1
+
+#most are between 233-251 bp, but a lot at 301 too
+awk '{print length}' dna-sequences.fasta | sort | uniq -c
+
+#export table to get otu table
+qiime tools export \
+table.qza \
+--output-dir exported-table
+
+#convert biom to otu table text file!
+biom convert -i feature-table.biom -o otu_table.txt --to-tsv
+
+#delete the space and # from '#OTU ID' on line 2 
+sed '2s/[ ]//' otu_table.txt | sed '2s/.//' > otu_table2.txt
+
+qiime feature-table summarize \
+--i-table table.qza \
+--o-visualization table.qzv \
+--m-sample-metadata-file ITS_Niwot_20072015_All_MapFilenewlomehi.tsv
+
+qiime tools view table.qzv
+
+qiime feature-table tabulate-seqs \
+--i-data rep-seqs.qza \
+--o-visualization rep-seqs.qzv
+
+qiime tools view rep-seqs.qzv
+
+
+##### Assign taxonomy #####
+
+#start 6:03pm, end 6:17 pm 
+qiime feature-classifier classify-sklearn \
+--i-classifier unite-ver7-99-classifier-01.12.2017.qza \
+--i-reads rep-seqs.qza \
+--p-n-jobs 2 \
+--o-classification taxonomy_unite.qza
+
+qiime tools export \
+taxonomy_unite.qza \
+--output-dir exported-taxonomy_unite
+
+#navegate to new directory, take out all spaces so it can be read into R (even the space in "unculutred eukaryote")
+sed 's/[ ]//' taxonomy.tsv > taxonomy2.tsv
+#then I still need to open the file in excel and save as a .csv - not sure why the import of the txt file is screwing up
+
+#start 8:15, end 8:15
+qiime metadata tabulate \
+--m-input-file taxonomy_unite.qza \
+--o-visualization taxonomy_unite.qzv
+
+qiime tools view taxonomy_unite.qzv
+
+#visualize barplots
+qiime taxa barplot \
+--i-table table.qza \
+--i-taxonomy taxonomy_unite.qza \
+--m-metadata-file ITS_Niwot_20072015_All_MapFilenewlomehi.tsv \
+--o-visualization taxa-bar-plots_unite.qzv
+
+qiime tools view taxa-bar-plots_unite.qzv
+
+
+
+
+
+
+
+###### ITS - trimming reads first ####
+#look at quality
+qualityr <- read.table("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/ITS/fastaqual/Undetermined_S0_L001_R2_001quality_by_cycle.txt", header=T, sep='\t')
+
+plot(qualityr$mean ~ qualityr$column, type="l", xlab="Cycle number", ylab="mean quality score")
+abline(h=25, col="red")
+
+plot(qualityr$med ~ qualityr$column, type="l", xlab="Cycle number", ylab="mean quality score")
+abline(h=25, col="red")
+
+qualityr$column[which(qualityr$med<25)]
+qualityr$column[which(qualityr$mean<25)]
+
+qualityf <- read.table("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/ITS/fastaqual/Undetermined_S0_L001_R1_001quality_by_cycle.txt", header=T, sep='\t')
+
+plot(qualityf$mean ~ qualityf$column, type="l", xlab="Cycle number", ylab="mean quality score")
+abline(h=25, col="red")
+
+plot(qualityf$med ~ qualityf$column, type="l", xlab="Cycle number", ylab="mean quality score")
+abline(h=25, col="red")
+
+qualityf$column[which(qualityf$med<25)]
+qualityf$column[which(qualityf$mean<25)]
+
+gunzip forward.fastq.gz
+#start 6:52, end 7:15
+/Users/farrer/Dropbox/EmilyComputerBackup/Desktop/bin/fastx_trimmer -Q33 -l 292 -i forward.fastq -o forwardt.fastq
+gzip forwardt.fastq
+
+gunzip reverse.fastq.gz
+#start 7:23, end 7:46
+/Users/farrer/Dropbox/EmilyComputerBackup/Desktop/bin/fastx_trimmer -Q33 -l 241 -i reverse.fastq -o reverset.fastq
+gzip reverset.fastq
+
+#Move zipped files to new folder and rename them
+
+#import paired end reads
+qiime tools import \
+--type EMPPairedEndSequences \
+--input-path emp-paired-end-sequences-trimmed \
+--output-path emp-paired-end-sequences-trimmed.qza
+
+#barcode is on the forward read (see word doc showing how the R1 has the reverse primers in the read, while the R2 has the forward primers. The initial primers got removed, but the sequence is so short that it kept reading the other half of the primer. However the mapping file is correct: "reverse primer" matches to the R2). looking at the barcodes and the barcode file, it looks like it is the reverse complement
+#start 9:41pm, end 10:46pm
+qiime demux emp-paired \
+--m-barcodes-file ITS_Niwot_20072015_All_MapFilenewlomehi.tsv \
+--m-barcodes-column BarcodeSequence \
+--i-seqs emp-paired-end-sequences-trimmed.qza \
+--o-per-sample-sequences demux \
+--p-rev-comp-mapping-barcodes
+
+#summarize
+qiime demux summarize \
+--i-data demux.qza \
+--o-visualization demux.qzv
+
+qiime tools view demux.qzv
+
+#export it so you can look inside at the files
+#started 8:54, end 9:08
+qiime tools export \
+demux.qza \
+--output-dir exported-demux
+
+#The amplicon size should be 230 bp (according to the earth microbiome website). So there will be primers in many reads.
+
+###### Trim primers/adapters ######
+#To get these adapters I looked in the raw sequnce data and found and made sure they were there. for example, the adapter-f ended up being the reverse complement of the reverse primer
+#start 5:49pm, end pm
+qiime cutadapt trim-paired \
+--i-demultiplexed-sequences demux.qza \
+--p-cores 4 \
+--p-adapter-f GCATCGATGAAGAACGCAGC \
+--p-adapter-r TTACTTCCTCTAAATGACCAAG \
+--o-trimmed-sequences trimmed-seqs.qza \
+--verbose
+#warning that on or mor of your adaptors may be incomplete, R2 adaptor is preceded by T extremely often. I'm leaving it, since I'm pretty sure we have the adapter sequence correct.
+
+#error in N.129.2015_104_L001_R1_001.fastq.gz, M00517:307:000000000-AM49E:1:2119:18214:8101 1:N:0:0 saying the read and quality length don't match. that doesn't make sense, when I grep it the read and quality socres are both 292bp
+grep -C 5 "M00517:307:000000000-AM49E:1:2119:18214:8101 1:N:0:0" N.129.2015_104_L001_R1_001_copy.fastq
+if i want to I could delete that sample and rerun everything...
+XXXXXXXXX
+
+#summarize
+qiime demux summarize \
+--i-data trimmed-seqs.qza \
+--o-visualization trimmed-seqs.qzv
+
+qiime tools view trimmed-seqs.qzv
+
+#export
+qiime tools export \
+trimmed-seqs.qza \
+--output-dir exported-trimmed-seqs
+#R1 almost all got trimmed to 253 bp. R2 some got trimmed and some didn't probably b/c there are lots of errors at the end of the read and it did not recognize the primer.
+
+#Getting a histogram of line lengths
+awk '{print length}' S.0.2015_53_L001_R1_001_copy.fastq | sort | uniq -c
+#read 1 lots of variability, but most around 230 (8000 reads) and 301 (10808 reads)
+
+awk '{print length}' S.0.2015_53_L001_R2_001_copy.fastq | sort | uniq -c
+#read 2 lots of variability, 8000 at 251, 1606 at 301
+
+##### Denoising with DADA2 #####
+#I need to figure out if i need to trim things. if I wanted to use fastx_trimmer, I would have to see if it would work. Whe I used it before, I did it on the initial file from the sequencing company, prior to demultiplexing (a fastq file). I mgiht be able to do it on multiple files at a later stage (after demultiplexing), but hten I'd have to figure out how to do it on many files (each sample individually) and then convert those file back to a qza file. Not impossible but maybe not worth it.
+#DADA2 webpage https://benjjneb.github.io/dada2/tutorial.html suggests not truncating if you're using ITS data b/c of the large variability in read lengths. Since DADA2 does take into account bp quality it should be fine. however if you can truncate it will increase sensitivity to rare variants.
+#at 293bp and 230 respectively are when the median quality scores hit 25 - based on previous r script. using visualizaiton above, however the reads that are shorter than the truncation numbers are discarded, thus I should keep everything or do truncation prior to this step.
+#the reads I'm seeing are 230-250bp, if the primers are 20 and 22 bp, then for R1, the primer should be within the high quality region. but for R2 the primer will be in the poor quality region so it may not have been removed in the above step. however, I don't think there is anything I can do without losing a bunch of small reads. If I trim, I lose small reads that are deleted (with truncation) and large reads that no longer overlap prior to trimming, If I don't trim, I lose all reads where the primer was not removed
+#note for n-threads specifying 0 means use all cores
+#note for trunc-len specifying 0 means don't truncate
+#start 12:15pm, end it was probably 1.5 hrs into it that I noticed that there was an error
+qiime dada2 denoise-paired \
+--i-demultiplexed-seqs trimmed-seqs.qza \
+--o-table table \
+--o-representative-sequences rep-seqs \
+--p-n-threads 0 \
+--p-trim-left-f 0 \
+--p-trim-left-r 0 \
+--p-trunc-len-f 0 \
+--p-trunc-len-r 0
+
+#There was an error:
+Plugin error from dada2:
+  
+  An error was encountered while running DADA2 in R (return code -11), please inspect stdout and stderr to learn more.
+
+Debug info has been saved to /var/folders/d0/9mbd394w8xq_ch0059bpzfs80000gn/T/qiime2-q2cli-err-at5itkms.log
+
+#I reinstalled biocLite and dada2 and tried it again
+CDPATH= R -e 'source("https://bioconductor.org/biocLite.R"); biocLite("dada2")'
+#that didn't fix it, same error
+
+#then I went to /Users/farrer/ and created a .Rprofile file with below in it. before there was no .Rprofile file at all, see https://forum.qiime2.org/t/dada2-exit-code-11-and-rprofile/1386/14
+
+echo ".libPaths(.libPaths()[2])" > $HOME/.Rprofile
+
+#then tried again, start 2:40pm, same error. 
+
+#then I tried deleting sample N.103.2015 b/c also within the error was a note that there were no samples passing filter
+
+#then I found that they released a patch: https://forum.qiime2.org/t/qiime-2-2017-12-release-is-now-live/2308/10?u=thermokarst
+#I just needed to uninstall then reinstall qiime2.
+#denoising again
+#start: 3:24pm, end 5:10pm. NICE No errors!
+
+#export rep seqs just to take a look at. especially to look at how the long sequences got identified, I don't think I can look at this, since there isn't a file that has the ID DNA header, the sequence, and the feature ID in it
+qiime tools export \
+rep-seqs.qza \
+--output-dir exported-rep-seqs
+
+#to print the line with the longest number of characters:
+cat dna-sequences.fasta|awk '{print length, $0}'|sort -nr|head -1
+#the longest line in the rep set is 565bp, and blasts to nothing, must be an error of some kind
+
+#lots are 301 which is suspicious, othrs are 230-250bp
+awk '{print length}' dna-sequences.fasta | sort | uniq -c
+
+#export table to get otu table
+qiime tools export \
+table.qza \
+--output-dir exported-table
+
+#convert biom to otu table text file!
+biom convert -i feature-table.biom -o otu_table.txt --to-tsv
+
+#delete the space and # from '#OTU ID' on line 2 
+sed '2s/[ ]//' otu_table.txt | sed '2s/.//' > otu_table2.txt
+
+qiime feature-table summarize \
+--i-table table.qza \
+--o-visualization table.qzv \
+--m-sample-metadata-file ITS_Niwot_20072015_All_MapFilenewlomehi.tsv
+
+qiime tools view table.qzv
+
+qiime feature-table tabulate-seqs \
+--i-data rep-seqs.qza \
+--o-visualization rep-seqs.qzv
+
+qiime tools view rep-seqs.qzv
+
+
+##### Assign taxonomy #####
+#start 12:41pm, end 2:26pm
+qiime feature-classifier classify-sklearn \
+--i-classifier all_EMB_SILVA128_classifier.qza \
+--i-reads rep-seqs.qza \
+--p-n-jobs 2 \
+--o-classification taxonomy.qza
+
+#start 8:50pm, end 9:07pm
+qiime feature-classifier classify-sklearn \
+--i-classifier unite-ver7-99-classifier-01.12.2017.qza \
+--i-reads rep-seqs.qza \
+--p-n-jobs 2 \
+--o-classification taxonomy_unite.qza
+
+
+qiime tools export \
+taxonomy.qza \
+--output-dir exported-taxonomy
+
+qiime tools export \
+taxonomy_unite.qza \
+--output-dir exported-taxonomy_unite
+
+#navegate to new directory, take out all spaces so it can be read into R (even the space in "unculutred eukaryote")
+sed 's/[ ]//' taxonomy.tsv > taxonomy2.tsv
+#then I still need to open the file in excel and save as a .csv - not sure why the import of the txt file is screwing up
+
+#start 8:15, end 8:15
+qiime metadata tabulate \
+--m-input-file taxonomy.qza \
+--o-visualization taxonomy.qzv
+
+qiime metadata tabulate \
+--m-input-file taxonomy_unite.qza \
+--o-visualization taxonomy_unite.qzv
+
+qiime tools view taxonomy.qzv
+qiime tools view taxonomy_unite.qzv
+
+#visualize barplots
+qiime taxa barplot \
+--i-table table.qza \
+--i-taxonomy taxonomy.qza \
+--m-metadata-file ITS_Niwot_20072015_All_MapFilenewlomehi.tsv \
+--o-visualization taxa-bar-plots.qzv
+
+qiime taxa barplot \
+--i-table table.qza \
+--i-taxonomy taxonomy_unite.qza \
+--m-metadata-file ITS_Niwot_20072015_All_MapFilenewlomehi.tsv \
+--o-visualization taxa-bar-plots_unite.qzv
+
+qiime tools view taxa-bar-plots.qzv
+qiime tools view taxa-bar-plots_unite.qzv
 
