@@ -4,9 +4,9 @@
 setwd("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/NWT_MovingUphill2")
 setwd("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata")
 
-save.image("~/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill2_Workspace_Analysis5.Rdata")  #alternate between 4 and 5
+save.image("~/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis2.Rdata")  #alternate between 1 and 2
 
-load("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill2_Workspace_Analysis5.Rdata")
+load("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis2.Rdata")
 
 
 #for data cleaning
@@ -20,14 +20,23 @@ library(phyloseq)
 library(picante) #for phylogenetic diversity
 
 #for cooccurrence networks
-library(foreach)
-library(doParallel)
+#library(foreach)
+#library(doParallel)
+library(HMSC)
+library(vegan)
+library(corrplot)
+library(circlize)
+library(Hmisc)
+library(boral)
+library(Matrix)
 
 #for plotting
 library(igraph)
 #library(fdrtool)
 library(ggplot2)
 library(grid) #for unit function in ggplot2 for legend 
+
+library(vegan)
 
 #for network stats
 library(NetIndices)
@@ -41,7 +50,6 @@ detach(package:igraph)
 sessionInfo()
 
 #extra not needed
-library(vegan)
 library(reshape)
 library(plotrix)
 library(Kendall)
