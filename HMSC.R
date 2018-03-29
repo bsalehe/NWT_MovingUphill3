@@ -86,12 +86,12 @@ rcorr(as.matrix(hmscX[,2:(dim(hmscX)[2]-1)]))
 #plot(hmscX$TC,hmscX$moisture)
 
 #select lo/me/hi
-ind<-which(hmscX$lomehi=="lo")
+ind<-which(hmscX$lomehi=="hi")
 hmscXb<-hmscX[ind,]
 hmscYb<-hmscY[ind,]
 
 #select species with greater than 9 (10 or more) occurrences and remove lo me hi (since you can't have text in a matrix or the whole matrix becomes character)
-ind<-which(colSums(hmscYb>0)>9)
+ind<-which(colSums(hmscYb>0)>5)
 length(ind)
 hmscYc<-hmscYb[,ind]
 hmscXc<-hmscXb[,1:dim(hmscXb)[2]-1]#
@@ -102,8 +102,8 @@ dim(hmscXc)
 #hmscYd<-sqrt(hmscYc*100)
 #hmscYd<-hmscYc*100 #this is odd, 9 taxa have negative R2
 #hmscYd<-log(hmscYc+1)
-hist(hmscYc[,12])
-hist(hmscYd[,12])
+#hist(hmscYc[,12])
+#hist(hmscYd[,12])
 
 #check if the values are too low that some tolerance is messing up the CI estimates, yes important to scale y, instead of scaling Y I will use the sqrt transform of the percent. I will scale x, since they differ so much in range
 hmscXd<-scale(hmscXc)
@@ -127,12 +127,12 @@ pimat$plot<-as.factor(pimat$plot)
 rownames(pimat)<-rownames(hmscYe)
 
 formdata <- as.HMSCdata(Y = hmscYe, X = hmscXe, Random=pimat,interceptX = F, scaleX=T)
-formprior <- as.HMSCprior(formdata,family="gaussian",shrinkOverall = NULL, shrinkSpeed = NULL,shrinkLocal = NULL) #not necessary, this just generates flat priors
-#formprior <- as.HMSCprior(formdata,family="poisson") #not necessary, this just generates flat priors
+#formprior <- as.HMSCprior(formdata,family="gaussian",shrinkOverall = NULL, shrinkSpeed = NULL,shrinkLocal = NULL) #not necessary, this just generates flat priors
+formprior <- as.HMSCprior(formdata,family="overPoisson") #not necessary, this just generates flat priors
 formparam <- as.HMSCparam(formdata, formprior,latent = NULL,paramLatent = NULL, shrinkLocal = NULL, paramShrinkGlobal = NULL) #not necessary, this just generates random staring parameters
 
-model <- hmsc(formdata, family = "gaussian", niter = 10000, nburn = 1000, thin = 10)
-#model <- hmsc(formdata, family = "poisson", niter = 10000, nburn = 1000, thin = 10)
+#model <- hmsc(formdata, family = "gaussian", niter = 10000, nburn = 1000, thin = 10)
+model <- hmsc(formdata, family = "overPoisson", niter = 10000, nburn = 1000, thin = 10)
 
 mixing <- as.mcmc(model,parameters = "paramX")
 temp<-as.vector(mixing[1:900,6])
@@ -192,6 +192,7 @@ colnames(hmscYe)
 
 ###### R2 ######
 #I don't understand the difference b/t variance partitioning and R2, the numbers are not the same. This calcualtes R2 <- 1 - ssRes/ssY. Ok I think the difference is that the total height of the bar (which is 100% in the variance partitining) should be scaled to this R2 value; because above is the contribution of each parameter to the predicted value and here is the difference b/t the predicted value and the observed value
+#I think this doesn't work unless gaussian or probit
 Ymean <- apply(model$data$Y,2,mean)
 R2 <- Rsquared(model, averageSp=FALSE)
 mean(R2)
@@ -269,6 +270,9 @@ unique(c(CovsCI$sp1[ind],CovsCI$sp2[ind]))
 ###### Correlations #####
 #Confidence intervals for pairwise correlations, these distributions are very odd, they are bimodal with a lot at -1 and a lot at 1, so the mean is somewhere in the middle
 corMat <- corRandomEff(model, cor = TRUE)
+#when I did lo, I needed to set this
+#rownames(corMat)<-colnames(model$data$Y)
+#colnames(corMat)<-colnames(model$data$Y)
 hist(corMat[15,14 , , 1])
 ltri <- lower.tri(apply(corMat[, , , 1], 1:2, quantile, probs = 0.025),diag=F) #originally diag=T
 ### Average
@@ -298,13 +302,13 @@ CorsCI<-cbind(CorSp,averageCor,CICor)
 head(CorsCI)
 CorsCIhi<-CorsCI
 
-#thse are the same 12 as above with the Cov matrix, so I guess that's ok, even though the distributions are kind of wonky
+#these are the same as above with the Cov matrix, so I guess that's ok, even though the distributions are kind of wonky
 ind<-which(CorsCI$corMat.025<0&CorsCI$corMat.975<0|CorsCI$corMat.025>0&CorsCI$corMat.975>0)
 length(ind)
 CorsCI[ind,]
 hist(CorsCI$averageCor)
-unique(c(CovsCI$sp1[ind],CovsCI$sp2[ind]))
-length(unique(c(CovsCI$sp1[ind],CovsCI$sp2[ind])))
+unique(c(CorsCI$sp1[ind],CorsCI$sp2[ind]))
+length(unique(c(CorsCI$sp1[ind],CorsCI$sp2[ind])))
 
 ind<-which(CorsCI$averageCor>.9)
 CorsCI[ind,]
@@ -321,6 +325,7 @@ ind<-which(CorsCIhi$corMat.025<0&CorsCIhi$corMat.975<0|CorsCIhi$corMat.025>0&Cor
 length(ind)
 inputhi<-CorsCIhi[ind,]
 dim(inputhi)
+head(inputhi)
 #inputhiv<-subset(edge_listsKS32no2b,qval<.05&trt=="hi")#
 #vertexsizes1<-unique(data.frame(otu=c(as.character(inputhiv$taxa1),as.character(inputhiv$taxa2)),abun=c(inputhiv$ab1,inputhiv$ab2)))
 graph1<-simplify(graph.edgelist(as.matrix(inputhi[,1:2]),directed=FALSE))
@@ -329,7 +334,7 @@ graph1$layout <- layout_in_circle
 #colnames(verticesgraph1)<-"otu" #
 #colorgraph1<-merge(verticesgraph1,labelsall,"otu",all.y=F,all.x=F,sort=F)
 #sizesgraph1<-ifelse(verticesgraph1$otu%in%hubshi,8,4)
-plot(graph1,vertex.size=4,edge.curved=T,vertex.label=NA,edge.color=ifelse(inputhi$direction==-1,"blue","red"))
+plot(graph1,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(inputhi$direction==-1,"blue","red"))
 #plot(graph1,vertex.size=4,vertex.color=colorgraph1$color,vertex.label.cex=.8,vertex.label.dist=.1,vertex.label.color="black",edge.curved=T,edge.color="gray40",vertex.label=NA)#,vertex.size=log(sizesgraph1$abun)*2  vertex.label=as.character(colorgraph1$orders)  
 
 
@@ -352,8 +357,8 @@ corrplot(averageCor2, method = "color", col = colorRampPalette(c("blue", "white"
 corMat2 <- corRandomEff(model, cor = TRUE)
 averageCor <- apply(corMat2[, , , 1], 1:2, mean)
 colMat <- matrix(NA, nrow = nrow(averageCor), ncol = ncol(averageCor))
-colMat[which(averageCor > 0.7, arr.ind = TRUE)] <- "red"
-colMat[which(averageCor < -0.7, arr.ind = TRUE)] <- "blue"
+colMat[which(averageCor > 0.95, arr.ind = TRUE)] <- "red"
+colMat[which(averageCor < -0.95, arr.ind = TRUE)] <- "blue"
 chordDiagram(averageCor, symmetric = TRUE,
              annotationTrack = c("name", "grid"),
              grid.col = "grey",col=colMat)
@@ -371,9 +376,6 @@ length(which(averageCor>.9|averageCor<(-.9)))
 which(averageCor<(-.9))
 which(averageCor>(.9))
 hist(averageCor)
-
-library(tidyr)
-library(dplyr)
 
 averageCor2<-data.frame(taxon1=rownames(averageCor),averageCor)
 averageCor3<-gather(averageCor2,taxon2,cor,bdenovo195709:idenovo18189) #not labeling like I want

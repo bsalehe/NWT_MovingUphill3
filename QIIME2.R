@@ -71,11 +71,18 @@ qiime tools import \
 --output-path 18S_SILVA128_99_otus.qza
 
 #second and third time, with all taxa, start 7:33pm, end 7:36
-##USE THIS
+##USE THIS if you want 128 release
 qiime tools import \
 --type 'FeatureData[Sequence]' \
 --input-path SILVA_128_QIIME_release/rep_set/rep_set_all/99/99_otus.fasta \
 --output-path all_SILVA128_99_otus.qza
+
+#6th time, with all taxa and the 111 release, start 1:31pm, end 1:33
+##USE THIS
+qiime tools import \
+--type 'FeatureData[Sequence]' \
+--input-path Silva_111_post/rep_set/Silva_111_full_unique.fasta \
+--output-path all_SILVA111_unique_otus.qza
 
 
 #Import taxonomy, only with 18S. I'm using consensus taxonomy, which means all of the sequences need to have the same exact species taxonomy to be identified as a species, otherwise it is identified as "ambiguous taxa". This is very conservative. the alternative is using majority_taxonomy which 90% of the sequences in the database have to match. One comment in a forum is that the majority should be conservative enough for most uses, but if you are looking into a particular taxon, you should probably take the sequence and blast it yourself separately to make sure you are referencing the correct taxonomy. B/c I might do this when looking at hubs/connectors, I'll leave it a the highly conservative consensus, since I don't want to reblast things and I don't want to mis-report.
@@ -88,7 +95,7 @@ qiime tools import \
 --output-path 18S_SILVA128_99_taxonomy.qza
 
 #second time, all taxa. this is odd, there is also a file called just "taxonomy_all_levels.txt" not sure how that is different from consnsus_taxonomy_all_levels.txt  In consensus taxonomy, identical sequences with different names are renamed using consensus
-#USE THIS
+#USE THIS if you want 128 release
 qiime tools import \
 --type 'FeatureData[Taxonomy]' \
 --source-format HeaderlessTSVTaxonomyFormat \
@@ -109,6 +116,15 @@ qiime tools import \
 --input-path SILVA_128_QIIME_release/taxonomy/taxonomy_all/99/taxonomy_all_levels.tsv \
 --output-path all_SILVA128_99_taxonomy_plain.qza
 
+#sixth time (not sure what happened with 5). THere are lots of options here, there is a file that says "no ambiguous" but I dont know if they mean ambiguous taxa or bases, I assume taxa since this is a taxonomy file not base pairs. there is also a file with consistent 6 ranks (the help said that RDP requires all taxa to have consistent number of ranks. I can try this if the full taxonomy doesn't work). there are also 99 clustered files, but I will use full database
+#USE THIS if you want 111 release
+qiime tools import \
+--type 'FeatureData[Taxonomy]' \
+--source-format HeaderlessTSVTaxonomyFormat \
+--input-path Silva_111_post/taxonomy/Silva_111_taxa_map_full.tsv \
+--output-path all_SILVA111_unique_taxonomy.qza
+
+
 ##### Extract EMBP variable region for 18S #####
 #I'm not entirely sure what length to use, probably should use the max length from my euk data below (which is generally less than 150, except there are about 2000 reads per sample that are 301) or 150, since that is exactly what the person writing this workflow used. update: with paired end data, trunc-len should not be used (set at default 0), see below
 #start 7:12, end 7:17
@@ -128,12 +144,22 @@ qiime feature-classifier extract-reads \
 --o-reads ref-seqs_all_99_SILVA128_RL150.qza
 
 #Try it wihtout the 150 truncation (default is 0). post saying that you shouldn't truncate with paired end data: https://forum.qiime2.org/t/how-can-i-train-classifier-for-paired-end-reads/1512/7, I think truncation is for when you have only a forward read and it is a particular length, start 1:32pm, end 2:14pm
-##USE THIS
+##USE THIS for 128 release
 qiime feature-classifier extract-reads \
 --i-sequences all_SILVA128_99_otus.qza \
 --p-f-primer GTACACACCGCCCGTC \
 --p-r-primer TGATCCTTCTGCAGGTTCACCTAC \
 --o-reads ref-seqs_all_99_SILVA128.qza
+
+
+#Without the 150 truncation, start 2:30pm, end 3:17pm
+##USE THIS for 111 release
+qiime feature-classifier extract-reads \
+--i-sequences all_SILVA111_unique_otus.qza \
+--p-f-primer GTACACACCGCCCGTC \
+--p-r-primer TGATCCTTCTGCAGGTTCACCTAC \
+--o-reads ref-seqs_all_unique_SILVA111.qza
+
 
 #export to see what it trimmed. there are definitely sequences that are 101 bp, thus lower than 150, so it's not like it deleted short sequences. 150 is the largest length
 qiime tools export \
@@ -145,8 +171,8 @@ awk '{print length}' dna-sequences.fasta | sort | uniq -c
 #Most lengths are less than 140, there are some longer though
 #USE THIS
 qiime tools export \
-ref-seqs_all_99_SILVA128.qza \
---output-dir exported-ref-seqs_all_99_SILVA128
+ref-seqs_all_unique_SILVA111.qza \
+--output-dir exported-ref-seqs_all_unique_SILVA111.qza
 
 awk '{print length}' dna-sequences.fasta | sort | uniq -c
 
@@ -170,11 +196,19 @@ qiime feature-classifier fit-classifier-naive-bayes \
 --o-classifier all_EMB_SILVA128_classifier_majority.qza
 
 #start
-###USE THIS
+###USE THIS for 128
 qiime feature-classifier fit-classifier-naive-bayes \
 --i-reference-reads ref-seqs_all_99_SILVA128.qza \
 --i-reference-taxonomy all_SILVA128_99_taxonomy.qza \
 --o-classifier all_EMB_SILVA128_classifier.qza
+
+#start
+###USE THIS for 111
+qiime feature-classifier fit-classifier-naive-bayes \
+--i-reference-reads ref-seqs_all_unique_SILVA111.qza \
+--i-reference-taxonomy all_SILVA111_unique_taxonomy.qza \
+--o-classifier all_EMB_SILVA111_classifier.qza
+
 
 #talking about what the different outputs (truncated taxonomy vs blank genus/species levels means: 
 https://forum.qiime2.org/t/consensus-blast-taxonomy-strings/586/2
@@ -518,6 +552,16 @@ qiime feature-classifier classify-sklearn \
 --p-n-jobs -2 \
 --o-classification taxonomy5.qza
 
+#Sixth time with the 111 release
+#start 3:25, end 3:36
+##USE THIS
+qiime feature-classifier classify-sklearn \
+--i-classifier all_EMB_SILVA111_classifier.qza \
+--i-reads rep-seqs.qza \
+--p-n-jobs -2 \
+--o-classification taxonomy6.qza
+
+
 
 #explanation of sklearn and training 
 #https://forum.qiime2.org/t/classifier-training-questions/1162/3
@@ -541,6 +585,10 @@ taxonomy4.qza \
 qiime tools export \
 taxonomy5.qza \
 --output-dir exported-taxonomy5
+
+qiime tools export \
+taxonomy6.qza \
+--output-dir exported-taxonomy6
 
 #navigate to new directory, take out all spaces so it can be read into R (even the space in "unculutred eukaryote")
 sed 's/[ ]//' taxonomy.tsv > taxonomy2.tsv
@@ -567,8 +615,12 @@ qiime metadata tabulate \
 --m-input-file taxonomy5.qza \
 --o-visualization taxonomy5.qzv
 
-qiime tools view taxonomy.qzv
-#this is not visualizing for some reason
+qiime metadata tabulate \
+--m-input-file taxonomy6.qza \
+--o-visualization taxonomy6.qzv
+
+qiime tools view taxonomy6.qzv
+
 
 #visualize barplots
 qiime taxa barplot \
@@ -601,7 +653,13 @@ qiime taxa barplot \
 --m-metadata-file EukBr_Niwot_20072015_All_MapFilenewlomehi.tsv \
 --o-visualization taxa-bar-plots5.qzv
 
-qiime tools view taxa-bar-plots2.qzv
+qiime taxa barplot \
+--i-table table.qza \
+--i-taxonomy taxonomy6.qza \
+--m-metadata-file EukBr_Niwot_20072015_All_MapFilenewlomehi.tsv \
+--o-visualization taxa-bar-plots6.qzv
+
+qiime tools view taxa-bar-plots6.qzv
 qiime tools view taxa-bar-plots5.qzv
 #you can download a csv file from this visualization, might be useful
 
@@ -609,7 +667,7 @@ qiime tools view taxa-bar-plots5.qzv
 #looking only at eukaroyte classified reads, many of the numbers in the groups (level2) are identical, a few are a little different, with the Euk only database always having more reads (if they are not the same). the euk dataset also has many many more reads for the Eukaryota;__ classification. That is where the main difference is. This is because it looks like any read that is unclassified or classified as bacteria in the dataset (from the all database) is calssified as a Eukaryota;__ in the euk only database. (i.e. the total number of reads is the same). Looking at some of the taxonomic groups at Level 2, some of the numbers of reads are higher in the all data base, some higher in the euk-only database. I can't explain that, except it is a different training so there is variability
 #comparing concensus and majority at level 2 they are nearly identical, does not affect the number of reads in Eukaryota;__
 #comparing truncated vs not, they look almost identical
-
+#comparing release 128 to 111, 111 has fewer unassigned, about the same number of Eukaryota;__
 
 
 

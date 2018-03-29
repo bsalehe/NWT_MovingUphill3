@@ -136,6 +136,11 @@ which(sample_data(datEukN)$X.SampleID=="S.33.2015")
 which(sample_data(datEukN)$X.SampleID=="S.56.2015")
 #33 and 56 are missing
 
+nemsforfunctionalgroup<-tax_table(datEukN)[which(tax_table(datEukN)[,"Rank7"]=="D_6__Nematoda"),]
+unique(nemsforfunctionalgroup[,"Rank9"])
+unique(nemsforfunctionalgroup[,"Rank11"])
+nemsforfunctionalgroup[,"Rank9"]
+unique(tax_table(datEukN)[,"Rank7"])
 
 
 
