@@ -79,19 +79,19 @@ hmscY<-comm.bio[,54:22184] #for count data
 rownames(hmscY)<-comm.bio$X.SampleID
 hmscY[1:10,1:10]
 
-hmscX<-data.frame(inter=rep(1,75),snowdepth=comm.bio$snowdepth,TN=comm.bio$TN,lomehi=comm.bio$lomehi) #,pH=comm.bio$pH,moisture=comm.bio$moisture,plantcov=comm.bio$plantcov
+hmscX<-data.frame(inter=rep(1,75),snowdepth=comm.bio$snowdepth,TC=comm.bio$TC,pH=comm.bio$pH,moisture=comm.bio$moisture,lomehi=comm.bio$lomehi) #,plantcov=comm.bio$plantcov
 rownames(hmscX)<-comm.bio$X.SampleID
 
 rcorr(as.matrix(hmscX[,2:(dim(hmscX)[2]-1)]))
 #plot(hmscX$TC,hmscX$moisture)
 
 #select lo/me/hi
-ind<-which(hmscX$lomehi=="hi")
+ind<-which(hmscX$lomehi=="lo")
 hmscXb<-hmscX[ind,]
 hmscYb<-hmscY[ind,]
 
 #select species with greater than 9 (10 or more) occurrences and remove lo me hi (since you can't have text in a matrix or the whole matrix becomes character)
-ind<-which(colSums(hmscYb>0)>5)
+ind<-which(colSums(hmscYb>0)>7)
 length(ind)
 hmscYc<-hmscYb[,ind]
 hmscXc<-hmscXb[,1:dim(hmscXb)[2]-1]#
