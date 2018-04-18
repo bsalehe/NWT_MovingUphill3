@@ -53,6 +53,19 @@ mypca<-rda(biogeo5,scale=T,na.action=na.omit)
 plot(mypca)
 summary(mypca)
 
+scal=2
+#pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/successionpca.pdf")
+plot(0,0,type="n",xlab=paste("Axis 1 (",sprintf("%.1f",mypca$CA$eig["PC1"]/mypca$tot.chi*100,3),"%)",sep=""),ylab=paste("Axis 2 (",sprintf("%.1f",mypca$CA$eig["PC2"]/mypca$tot.chi*100,3),"%)",sep=""),cex.lab=1.4,xlim=c(-1,3),ylim=c(-1.5,1.5))
+abline(h=0)
+abline(v=0)
+sorts<-order(scores(mypca,scaling=scal)$sites[,1],decreasing=T)
+points(-scores(mypca,scaling=scal)$sites[sorts,1],scores(mypca,scaling=scal)$sites[sorts,2],cex=.9,pch=16,col=rep(c('gray10','gray50','gray80'),each=25))
+arrows(0,0,-scores(mypca,scaling=scal)$species[,1],scores(mypca,scaling=scal)$species[,2],length=.05,col=1,lwd=2)
+text(-scores(mypca,scaling=scal)$species[,1],scores(mypca,scaling=scal)$species[,2],labels=rownames(scores(mypca,scaling=scal)$species),cex=.9,col=1)
+legend(2,1.5,c("Early succession","Mid succession","Late succession"),pch=16,col=c('gray10','gray50','gray80'),bty="n",cex=.9)
+#dev.off()
+
+
 succession<-(-scores(mypca)$sites[,1])
 
 succession2<-data.frame(pca1=succession,X.SampleID=names(succession))

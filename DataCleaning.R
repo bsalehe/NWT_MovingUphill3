@@ -862,8 +862,8 @@ labelsITS2$otu<-sub("^", "I",rownames(labelsITS2))
 
 labelfile1<-rbind(labelsEukS2,labelsEukN2,labelsBac2,labelsITS2)
 head(labelfile1)
-labelfile1$otu<-rownames(labelfile1)
-labelfile1$oldotu<-substring(rownames(labelfile1), 2)
+labelfile1$oldotu<-rownames(labelfile1)
+#labelfile1$oldotu<-substring(rownames(labelfile1), 2)
 
 #combine with plant labelfile
 labelsPlant<-as.data.frame(cbind(labels="Plant",group="Plant",group2="Plant",taxstring=colnames(plantcomp2)[2:55],otu=colnames(plantcomp2)[2:55],oldotu=colnames(plantcomp2)[2:55]))
@@ -871,12 +871,6 @@ head(labelsPlant)
 
 labelfile<-rbind(labelfile1,labelsPlant)
 tail(labelfile)
-
-
-
-
-
-
 
 
 

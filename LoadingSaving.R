@@ -4,9 +4,17 @@
 setwd("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/NWT_MovingUphill2")
 setwd("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata")
 
-save.image("~/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis1.Rdata")  #alternate between 2 and 3. 1 has minimal (no) models just data cleaned
+save.image("~/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis3.Rdata")  # 1 has minimal (no) models just data cleaned but the labels file has an error (otu/oldotu)
 
-load("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis1.Rdata")
+load("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis3.Rdata")
+
+
+
+#rm(list=setdiff(ls(), c("fit.lolv4occ9exp4","rescor.lolv4occ9exp4")))
+
+#save.image("~/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis2MODELS.Rdata") 
+
+#load("~/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis2MODELS.Rdata") 
 
 
 #for data cleaning
@@ -46,15 +54,15 @@ library(tidyr)
 library(dplyr)
 library(plotrix)
 
-detach(package:igraph)
-sessionInfo()
+#detach(package:igraph)
+#sessionInfo()
 
 #extra not needed
-library(reshape)
-library(plotrix)
-library(Kendall)
+#library(reshape)
+#library(plotrix)
+#library(Kendall)
 
 
-library(data.table)
+#library(data.table)
 #library(BiodiversityR) #this requires X11 and takes a while to load, you need to close the window that it opens in rcommander
 

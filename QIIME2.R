@@ -341,7 +341,7 @@ qiime feature-classifier fit-classifier-naive-bayes \
 --i-reference-taxonomy UNITE_12_11_99_taxonomy.qza \
 --o-classifier UNITE_12_11_99_classifier.qza
 
-#this release was messing up, so I downloaded an already trained classifir from unite here: https://forum.qiime2.org/t/unite-ver-7-2-2017-12-01-classifiers-for-qiime2-ver-2017-12-available-here/3020
+#this release was messing up, so I downloaded an already trained classifir from unite here (UNITE version 7.2): https://forum.qiime2.org/t/unite-ver-7-2-2017-12-01-classifiers-for-qiime2-ver-2017-12-available-here/3020
 #She followed the emp protocol for training it
 
 unite-ver7-99-classifier-01.12.2017.qza

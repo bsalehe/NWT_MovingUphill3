@@ -1,128 +1,469 @@
-#boral
-
-library(boral)
-library(Matrix)
-
-##########
 ## Fitting a Latent Variable Model using the boral package ##
 ## Use boral to fit a LVM with 4 latent variables, a random site effect, and the effect of fixed environmental variables
-##########   
+
+## NOTE: boral uses JAGS so you need to first install JAGS-3.0.0.exe or higher from http://sourceforge.net/projects/mcmc-jags/files/JAGS/
+
+library(boral) #Need version 0.7 or later, available on CRAN.
+library(Matrix)
+
+
+####### Get species and environment data together #####
+
+#microbes relative abundance data, filtered doubletons, singletons, taxa with < .002 summed rel abundance
+comm.dataEukS<-datEukS3otu3
+comm.dataEukN<-datEukN3otu3
+comm.dataBac<-datBacS3otu3
+comm.dataITS<-datITSS3otu3
+
+#microbes count data, filtered doubletons, singletons, taxa with < .002 summed rel abundance
+comm.dataEukS<-datEukS3cotu3
+comm.dataEukN<-datEukN3cotu3
+comm.dataBac<-datBacS3cotu3
+comm.dataITS<-datITSS3cotu3
+
+#plants
+plantcomp2
+
+
+#Merge things. all microbe datasets (not plants) should have the same 90 samples
+#first merge comm.dataEuk with comm.data16S
+#I need to remove all the description columns in one of the files, then merge
+comm.dataEukSa<-cbind(Sample_name=comm.dataEukS$Sample_name,comm.dataEukS[,-c(1:31)])
+comm.dataALL1<-merge(comm.dataEukN,comm.dataEukSa,"Sample_name",sort=F,all.y=F,all.x=F)
+
+comm.dataBaca<-cbind(Sample_name=comm.dataBac$Sample_name,comm.dataBac[,-c(1:31)])
+comm.dataALL2<-merge(comm.dataALL1,comm.dataBaca,"Sample_name",sort=F,all.y=F,all.x=F)
+
+comm.dataITSa<-cbind(Sample_name=comm.dataITS$Sample_name,comm.dataITS[,-c(1:31)])
+comm.dataALL3<-merge(comm.dataALL2,comm.dataITSa,"Sample_name",sort=F,all.y=F,all.x=F)
+
+comm.dataALL3$Sample_name
+dim(comm.dataALL3)[2]-31
+1091+142+4853+1122 #matches, good, 7208 microbial taxa total
+
+#then merge plants with microbes
+comm.dataALL4<-merge(comm.dataALL3,plantcomp2,"Sample_name",sort=F,all.y=F)
+comm.dataALL4$Sample_name
+
+#substitute S for the N, since the mapping file was from the nematode dataset
+comm.dataALL4$X.SampleID<-sub("N", "S", comm.dataALL4$X.SampleID) 
+
+#delete mapping file data except for X.SampleID
+comm.dataALL5<-comm.dataALL4[,-c(1,3:31)]
+comm.dataALL5[1:10,1:10]
+
+
+
+# biogeochemistry and plant density/cover data
+biogeo6$X.SampleID
+
+#Merge the biogeo6 with comm.dataALL, then split them to make sure the same samples and order are in each dataset
+comm.bio<-merge(biogeo6,comm.dataALL5)
+comm.bio[1:10,1:60]
+
+#the comm.bio.csv file that is saved here is from the old bioinformatics. I saved it b/c the R environment file takes so long to load. however I might want to reinstate this, if this environment gets really big
+#write.csv(comm.bio,"/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/comm.bio.csv",row.names=F)
+#comm.bio<-read.csv("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/comm.bio.csv")
+
+
+
+
+
+##### Split and subset datasets for modeling #####
+
+dim(comm.bio)
+
+hmscY<-comm.bio[,54:7315] #for count data
+#hmscY<-comm.bio[,54:5895] #for relabundance data
+#hmscY<-comm.bio[,54:300] #for practice
+
+rownames(hmscY)<-comm.bio$X.SampleID
+hmscY[1:10,1:10]
+
+#the intercept is a holdover from using the HMSC package, I will leave it in for how incase I ever want to go back to that
+hmscX<-data.frame(inter=rep(1,75),snowdepth=comm.bio$snowdepth,TC=comm.bio$TC,pH=comm.bio$pH,moisture=comm.bio$moisture,lomehi=comm.bio$lomehi) #,plantcov=comm.bio$plantcov  ,whc=comm.bio$WHC
+rownames(hmscX)<-comm.bio$X.SampleID
+
+rcorr(as.matrix(hmscX[,2:(dim(hmscX)[2]-1)]))
+#plot(hmscX$TC,hmscX$moisture)
+
+#select lo/me/hi
+ind<-which(hmscX$lomehi=="lo")
+hmscXb<-hmscX[ind,]
+hmscYb<-hmscY[ind,]
+
+#select species with greater than X (X+1 or more) occurrences and remove lo me hi (since you can't have text in a matrix or the whole matrix becomes character)
+ind<-which(colSums(hmscYb>0)>8)
+length(ind)
+hmscYc<-hmscYb[,ind]
+hmscXc<-hmscXb[,1:dim(hmscXb)[2]-1]#
+dim(hmscYc)
+dim(hmscXc)
+
+#the y data are not normal (the only options I have are normal, binary, poisson, overdispersed poisson), so I could do a sqrt transformation on Y (log(0) is -Inf). log(x+1) doesn't work since the proportions are so low, could do log(x*100+1) but the sqrt actually makes it more normal
+#hmscYd<-sqrt(hmscYc*100)
+#hmscYd<-hmscYc*100 #this is odd, 9 taxa have negative R2
+#hmscYd<-log(hmscYc+1)
+#hist(hmscYc[,12])
+#hist(hmscYd[,12])
+
+#check if the values are too low that some tolerance is messing up the CI estimates, yes important to scale y, instead of scaling Y I will use the sqrt transform of the percent. I will scale x, since they differ so much in range
+hmscXd<-scale(hmscXc)
+hmscXd[,1]<-1
+
+#hmscYd2<-scale(hmscYd)
+
+#make them matrices
+hmscXe<-as.matrix(hmscXd)
+
+hmscYe<-as.matrix(hmscYc)
+#hmscYe<-as.matrix(hmscYd2)
+
+dim(hmscYe)
+dim(hmscXe)
+
 
 ## Covariates need to be stored as a matrix for boral. no need for intercept
 covX <- hmscXe[,-1]
 
-## fit the LVM using boral and look at results.  Need version 0.7 or later, available on CRAN.
-## NOTE: boral uses JAGS so you need to first install JAGS-3.0.0.exe or higher from http://sourceforge.net/projects/mcmc-jags/files/JAGS/
 
-#Using the default mcmc parameters, the models take about 2 hrs to fit
-#fit.lvmhiocc6 
-#load("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis3b.Rdata")#to load fit.lvmhiocc6
-#fit.hilv4occ8exp5
-#fit.lolv4occ8exp5
-#fit.hilv4occ8exp4 (and b)
-#fit.melv4occ8exp4
 
-fit.lolv4occ8exp4 <- boral(y = hmscYe, X = covX, num.lv = 4, family = "negative.binomial", row.eff = "random", save.model = TRUE, calc.ics = T,mcmc.control = list(n.burnin = 1000, n.iteration = 4000, n.thin = 3, seed = 123), hypparams = c(20,20,20,20))#calc.ics = F, use ics (information criteria at your own risk)
 
-#mcmc.control = list(n.burnin = 10000, n.iteration = 40000, n.thin = 30, seed = 123)
+##### Fit the LVM using boral and calculate residual correlation matrix#####
 
-res.corslolv4occ8exp4 <- get.residual.cor(fit.lolv4occ8exp4) #this will not fit with a cuttoff of occ6, R studio crashes on my laptop
-save.image("~/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis3.Rdata") 
+#List of files produced:
+#fit.hilv4occ10exp4
+#fit.lolv4occ10exp4
+#fit.hilv4occ9exp4
+#fit.lolv4occ9exp4
+#fit.hilv4occ8exp4, do not have the corresponding rescor for this b/c my computer crashed
+#fit.melv4occ9exp4
+#fit.melv3occ9exp4
+#fit.melv5occ9exp4
+#fit.melv6occ9exp4
+#fit.melv2occ9exp4
+#fit.lolv4occ9exp4f - f means final model fitted with long mcmc chain, start 2:00pm, model finished 4:20pm, rescor finished 
+#fit.melv4occ9exp4f - f means final model fitted with long mcmc chain
+#fit.hilv4occ9exp4f - f means final model fitted with long mcmc chain
+#fit.lolv4occ9exp4nosite - with no site random effect 
+#fit.lolv4occ9exp0nosite - with no site random effct and only latent vaiables
 
-summary(fit.lvmhiocc8) # To look at estimated parameter values
-fit.lvmhiocc8$hpdintervals # 95% credible intervals for model parameters.
 
+#Using the default mcmc parameters, the models take about 2 hrs to fit.  mcmc.control = list(n.burnin = 10000, n.iteration = 40000, n.thin = 30, seed = 123)
+#Using shorter chains, it takes about 12 min to fit.  mcmc.control = list(n.burnin = 1000, n.iteration = 4000, n.thin = 3, seed = 123)
+# in the tutorial they add this to the model fitting code, hypparams = c(20,20,20,20), however, now if you wanted to change this you need to put it in a prior.control statement or something. I am just using the default here
+fit.hilv4occ9exp4f <- boral(y = hmscYe, X = covX, num.lv = 4, family = "negative.binomial", row.eff = "random", save.model = TRUE, calc.ics = T, mcmc.control = list(n.burnin = 10000, n.iteration = 40000, n.thin = 30, seed = 123))#calc.ics = F, use ics (information criteria at your own risk) 
+#fitting models for comparing percent covariance explained by env, take row.eff out
+fit.lolv4occ9exp4nosite <- boral(y = hmscYe, X = covX, num.lv = 4, family = "negative.binomial", save.model = TRUE, calc.ics = T, mcmc.control = list(n.burnin = 10000, n.iteration = 40000, n.thin = 30, seed = 123))
+fit.lolv4occ9exp0nosite <- boral(y = hmscYe, X = NULL, num.lv = 4, family = "negative.binomial", save.model = TRUE, calc.ics = T, mcmc.control = list(n.burnin = 10000, n.iteration = 40000, n.thin = 30, seed = 123))
+
+
+#Calculate residual correlation matrix
+#Using
+#Using shorter chains (see above comment), takes about 11 min to fit
+#This will not calculate with a cuttoff of occ6, R studio crashes on my laptop
+rescor.lolv4occ9exp4f <- get.residual.cor(fit.lolv4occ9exp4f) 
+rescor.melv4occ9exp4f <- get.residual.cor(fit.melv4occ9exp4f) 
+rescor.hilv4occ9exp4f <- get.residual.cor(fit.hilv4occ9exp4f) 
+
+rescor.lolv4occ9exp4nosite <- get.residual.cor(fit.lolv4occ9exp4nosite) 
+rescor.lolv4occ9exp0nosite <- get.residual.cor(fit.lolv4occ9exp0nosite) 
+
+
+#Use modified function below to get 90% CI
+#res.corshiocc8.90<-get.residual.cor2(fit.lvmhiocc8)
+save.image("~/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis3.Rdata")  
+
+
+##### Look at results and check convergence/fit #####
+
+#Model fit
+fit.melv2occ9exp4$ics[1]
+fit.melv3occ9exp4$ics[1]
+fit.melv4occ9exp4$ics[1]
+fit.melv5occ9exp4$ics[1]
+fit.melv6occ9exp4$ics[1]
+i<-1
+plot(2:6,c(fit.melv2occ9exp4$ics[i],
+           fit.melv3occ9exp4$ics[i],
+           fit.melv4occ9exp4$ics[i],
+           fit.melv5occ9exp4$ics[i],
+           fit.melv6occ9exp4$ics[i]),type = "b")
+
+
+summary(fit.hilv4occ9exp4f) # To look at estimated parameter values
+fit.lolv4occ10exp4$hpdintervals # 95% credible intervals for model parameters.
 
 #check information criteria
-fit.lvm$ics
-fit.lvmhi8$ics
+fit.lolv4occ10exp4$ics
 
+#Check convergence
+#Geweke diagnostic - a z test testing whether the first 10% and the last 50% are diffrent (i think those are the fractions, doesn't really matter exactly), if it is significant, then the means are different and it didn't converge
+plot(get.mcmcsamples(fit.hilv4occ9exp4)[,1])
+plot(get.mcmcsamples(fit.hilv4occ9exp4f)[,1])
 
-#check convergence
-plot(get.mcmcsamples(fit.hilv4occ8exp4)[,5])
-
-mcmchi<-get.mcmcsamples(fit.hilv4occ8exp4)
-head(mcmchi)
+#the order is effct of snowdepth for each of th 600 species, then effect of TC, then pH, then moisture 
+mcmchi<-get.mcmcsamples(fit.lolv4occ9exp4f)
 dim(mcmchi)
+colnames(mcmchi)[2500:3000]
+mcmchi[1:10,1:5]
 
-gew.pvals <- 2*pnorm(abs(unlist(fit.hilv4occ8exp4$geweke.diag[[1]])), lower.tail = FALSE)
+#TRUE means these did not converge
+gew.pvals <- 2*pnorm(abs(unlist(fit.hilv4occ9exp4f$geweke.diag[[1]])), lower.tail = FALSE)
 length(gew.pvals)
+gew.pvals[1:5]
 gew.pvals[which(gew.pvals<.05)] #technically these did not converge, however, the trace plots look fine to me
 p.adjust(gew.pvals, method = "holm")
 
-fit.hilv4occ8exp4$geweke.diag
-#(4th species) ece270a38485359f4d1e2a33f964a983 for snowdepth did not converge, but looking at the trace plot, it seems fine
+fit.hilv4occ9exp4f$geweke.diag
+str(fit.hilv4occ9exp4f$geweke.diag)
 
-## compare model coefficients with GLMM:
-cbind(fit.lvm$lv.coefs.mean,fit.lvm$X.coefs.mean)
-
-## Dunn-Smyth residual plots  to check model assumption, outliers etc...
-plot(fit.lolv4occ8exp5)
-
-## Residual ordination plot of the sites (please see Figure 2b in the main text for relevant explanation)
-## Please note that boral currently does not automatically produce biplots, although species loadings can be obtained from fit.lvm$lv.coefs.median[,2:3]
-lvsplot(fit.lolv4occ8exp5)
-
-
-## Use corrplot package to plot residual correlations between species, e.g. possibly due to species interaction etc...
-#res.cors (hi with 4latent)
-#res.corslo (lo with 4 latent)
-#res.corshi8 (hi with 8 latent) - hardly any correlations significant or strong
-#res.corshiocc8 (hi with 8 occurrences)
-#res.corshiocc8.90 (hi with 8 occurrences and 90CI)
-#res.corshiocc6 (hi 6 occ)
-#res.corshilv4occ8exp5 (hi with 5 environmetnal variables)
-#res.corslolv4occ8exp5
-
-res.corshiocc8 <- get.residual.cor(fit.lvmhiocc8)
-res.corshiocc6 <- get.residual.cor(fit.lvmhiocc6)
-#save.image("~/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis4.Rdata")  #alternate between 1 and 2
-
-corrplot(res.corshiocc8$sig.correlaton[1:100,1:100], diag = F, type = "lower", title = "Residual correlations from LVM", mar=c(3,0.5,2,1), tl.srt = 45,method = "color")#
-corrplot(res.corshilv4occ8exp5$sig.correlaton[1:100,1:100], type="lower", diag=F, title="Residual correlations", mar=c(3,0.5,2,1), tl.srt=45,method = "color")
-
-#use modified function to get 90% CI
-res.corshiocc8.90<-get.residual.cor2(fit.lvmhiocc8)
+#example of one that did not converge
+#(1st species) N6f914ead2160e51670d3dc70c25e107b for snowdepth did not converge, but looking at the trace plot, it seems fine
+#geweke diagnostic
+fit.hilv4occ9exp4f$geweke.diag$geweke.diag$X.coefs[1:5,]
+#trace plot (it is the very first parameter)
+plot(get.mcmcsamples(fit.hilv4occ9exp4f)[,1])
+#mean of the mcmc chain to make sure I'm looking at the right parameter
+mean(get.mcmcsamples(fit.hilv4occ9exp4f)[,1]) #mean is -1.710607
+#mean of the extractd model coefficients (to mak sure I'm looking at the right parameter)
+fit.hilv4occ9exp4f$X.coefs.mean  #-1.710607072, yes checks
 
 
-### Environmental correlations
-env.cors<-get.enviro.cor(fit.lvm)
-corrplot(env.cors$cor, type="lower", diag=F, title="Environmental correlations", mar=c(3,0.5,2,1), tl.srt=45)
-corrplot(env.cors$sig.cor, type="lower", diag=F, title="Environmental correlations", mar=c(3,0.5,2,1), tl.srt=45)
 
-#Finally, one approach to quantify how much of the species co-occurrence is explained by covariates (that is, how well the predictor variables describe the species assemblage) is through differences in the trace of the estimated residual covariance matrix induced by the latent variables (Warton et al. 2015). From the above code, this can be obtained as rescors$trace. For the spider data set, when we compared a pure latent variable model (similar to the equation 1 but without site effects) to the correlated response model, the trace decreased from 17892 to 10792. This implies that environmental covariates accounted for approximately 40% of the covariation between species.
+##### Percent covariation explained by env #####
+#One approach to quantify how much of the species co-occurrence is explained by covariates (that is, how well the predictor variables describe the species assemblage) is through differences in the trace of the estimated residual covariance matrix induced by the latent variables (Warton et al. 2015). From the above code, this can be obtained as rescors$trace. For the spider data set, when we compared a pure latent variable model (similar to the equation 1 but without site effects) to the correlated response model, the trace decreased from 178.92 to 107.92. This implies that environmental covariates accounted for approximately 40% of the covariation between species.
 (107.92-178.92)/178.92
 
 #Need to fit a model with only latent variables
-res.corshi8$trace
+rescor.lolv4occ9exp4f$trace
+rescor.lolv4occ9exp0f$trace
 
 
-#Chord diagrams
-str(res.cors)
-dim(res.cors$sig.correlaton)
-res.corslo$sig.correlaton[1:4,1:4]
-(length(which(res.corslo$sig.correlaton!=0))-dim(res.corslo$sig.correlaton)[1])/2
-colMat <- matrix(NA, nrow = nrow(res.cors$sig.correlaton), ncol = ncol(res.cors$sig.correlaton))
-colMat[which(res.cors$sig.correlaton > 0.63, arr.ind = TRUE)] <- "red"
-colMat[which(res.cors$sig.correlaton < -0.63, arr.ind = TRUE)] <- "blue"
-chordDiagram(res.cors$sig.correlaton, symmetric = TRUE,annotationTrack = c("name", "grid"),grid.col = "grey",col=colMat)
-
-colMat <- matrix(NA, nrow = nrow(res.corshiocc8$correlation), ncol = ncol(res.corshiocc8$correlation),dimnames = list(rownames(res.corshiocc8$correlation),rownames(res.corshiocc8$correlation)))
-colMat[which(res.corshiocc8$correlation > 0.5, arr.ind = TRUE)] <- 1
-colMat[which(res.corshiocc8$correlation < -0.5, arr.ind = TRUE)] <- -1
-colMat[which(res.corshiocc8$correlation<.5&res.corshiocc8$correlation>(-.5))]<-0
-
-length(which(res.cor90$correlation>.7&res.cor90$correlation<1,arr.ind = T))
-length(which(res.corshi8$correlation>.7&res.corshi8$correlation<1,arr.ind = T))
-hist(res.cors$correlation)
-hist(res.corshi8$correlation)
 
 
-#Plotting with igraph
+
+
+##### Environmental correlations #####
+envcor.lolv4occ9exp4f<-get.enviro.cor(fit.lolv4occ9exp4f)
+corrplot(envcor.lolv4occ9exp4f$cor[1:100,1:100], type="lower", diag=F, title="Environmental correlations", mar=c(3,0.5,2,1), tl.srt=45,tl.pos="n")
+corrplot(envcor.lolv4occ9exp4f$sig.cor[1:100,1:100], type="lower", diag=F, title="Environmental correlations", mar=c(3,0.5,2,1), tl.srt=45,tl.pos="n")
+
+
+
+
+##Extract model coefficients
+cbind(fit.lolv4occ10exp4$lv.coefs.mean,fit.lolv4occ10exp4$X.coefs.mean)
+fit.hilv4occ9exp4f$X.coefs.mean
+
+##Dunn-Smyth residual plots to check model assumption, outliers etc. The first plot should not have a funnel
+plot(fit.lolv4occ9exp4f)
+plot(fit.melv4occ9exp4f)
+plot(fit.hilv4occ9exp4f)
+
+## Residual ordination plot of the sites (please see Figure 2b in the main text for relevant explanation)
+## Please note that boral currently does not automatically produce biplots, although species loadings can be obtained from fit.lvm$lv.coefs.median[,2:3]
+lvsplot(fit.lolv4occ10exp4)
+
+
+
+##### Extract number of significant correlations #####
+
+(length(which(rescor.melv3occ9exp4$sig.correlaton!=0))-dim(rescor.melv3occ9exp4$sig.correlaton)[1])/2
+(length(which(rescor.melv4occ9exp4$sig.correlaton!=0))-dim(rescor.melv4occ9exp4$sig.correlaton)[1])/2
+(length(which(rescor.melv5occ9exp4$sig.correlaton!=0))-dim(rescor.melv5occ9exp4$sig.correlaton)[1])/2
+
+(length(which(rescor.lolv4occ9exp4f$sig.correlaton!=0))-dim(rescor.lolv4occ9exp4f$sig.correlaton)[1])/2
+(length(which(rescor.melv4occ9exp4f$sig.correlaton!=0))-dim(rescor.melv4occ9exp4f$sig.correlaton)[1])/2
+(length(which(rescor.hilv4occ9exp4f$sig.correlaton!=0))-dim(rescor.hilv4occ9exp4f$sig.correlaton)[1])/2
+
+#strange - using more mcmc iterations changs how many significant interactions there are (ex: lo: 3000 iter - 3398 interactions, 30000 iter - 1806 interactions). the only way I can explain this is that thre is more error in th paramter estimates with the short chain (i.e. th mixing is wider and the density histogram is wider), thus if you are more confident in th location of the species in ordination space, thn the locations will not overlap as much, and you will say that thy are less correlated.
+
+
+###### Use corrplot package to plot residual correlations between species #####
+
+corrplot(rescor.melv3occ9exp4$sig.correlaton[1:100,1:100], diag = F, type = "lower", title = "Residual correlations from LVM", mar=c(3,0.5,2,1), tl.srt = 45,method = "color")#
+corrplot(rescor.melv4occ9exp4$sig.correlaton[1:100,1:100], type="lower", diag=F, title="Residual correlations", mar=c(3,0.5,2,1), tl.srt=45,method = "color")
+corrplot(rescor.melv5occ9exp4$sig.correlaton[1:100,1:100], type="lower", diag=F, title="Residual correlations", mar=c(3,0.5,2,1), tl.srt=45,method = "color")
+
+corrplot(rescor.lolv4occ9exp4f$sig.correlaton[1:200,1:200], type="lower", diag=F, title="Residual correlations", mar=c(3,0.5,2,1), tl.srt=45,method = "color",tl.pos="n")
+
+
+
+
+##### Plotting with igraph #####
+
+##### colors #####
+
+labelcols<-data.frame(rbind(c("Bacteria","#7879BC"),
+                            c("Eukaryota","#94BA3C"),
+                            c("Mesofauna","#ff9c34"),
+                            c("Fungi","#F6EC32"),
+                            c("Plant","#E95275")))
+colnames(labelcols)=c("group","color")
+
+
+# including photosynthetic/not information
+labelcols<-data.frame(rbind(c("PhotosyntheticEukaryota","#49874c"),# 466D24
+                            c("NonphotosyntheticEukaryota","#673482"),
+                            c("PhotosyntheticBacteria","#94BA3C"),
+                            c("NonphotosyntheticBacteria","#7879BC"),
+                            c("UnknownEukaryota","gray30"),
+                            c("UnknownBacteria","gray70"),
+                            c("Mesofauna","#ff9c34"),
+                            c("Fungi","#F6EC32"),
+                            c("Plant","#E95275")))
+colnames(labelcols)=c("group2","color")
+
+head(labelfile)
+
+#labelsall<-merge(labelfile,labelcols,"group",all.x=F,all.y=F) #"labels"
+labelsall<-merge(labelfile,labelcols,"group2",all.x=F,all.y=F) #"labels"
+labelsall$color<-as.character(labelsall$color)
+head(labelsall)
+
+#old                            
+# c("NonphotosyntheticEukaryota","#673482"),
+# c("PhotosyntheticEukaryota","#466D24"),
+# c("Fungi","#F6EC32"),
+# c("Metazoa","#ff9c34"),
+# c("Plant","#E95275"),
+# c("PhotosyntheticBacteria","#94BA3C"),
+# c("NonphotosyntheticBacteria","#7879BC"),
+# c("OtherMetazoa","black"),
+# c("Nematoda","gray30"),
+# c("Tardigrada","gray55"),
+# c("Rotifera","gray80"),
+# c("Arthropoda","white"),
+# c("AF","red"),
+# c("AP","red"),
+# c("BF","black"),
+# c("FF","gray30"),
+# c("OM","gray55"),
+# c("PP","gray80"),
+# c("RA","white"),
+# c("unknown","red")))
+
+#colnames(labelcols)=c("labels","color")
+
+pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/legend.pdf")
+plot(c(1,1),c(1,1))
+legend("topright",c("Bacteria","Small Eukaryota","Mesofauna","Fungi","Plants"),pt.bg=c("#7879BC","#94BA3C","#ff9c34","#F6EC32","#E95275"),bty="n",pch=21,cex=1.4)
+plot(c(1,1),c(1,1))
+legend("topright",c("PhotosyntheticBacteria","NonphotosyntheticBacteria","UnknownBacteria","PhotosyntheticEukaryota","NonphotosyntheticEukaryota","UnknownEukaryota","Mesofauna","Fungi","Plants"),pt.bg=c("#94BA3C","#7879BC","gray70","#466D24","#673482","gray30","#ff9c34","#F6EC32","#E95275"),bty="n",pch=21,cex=1.4)
+dev.off()
+c("UnknownEukaryota","gray30"),
+c("UnknownBacteria","gray70"),
+
+
+
+##### lo #####
 #creating sparse matrix
-colMat<-res.corshilv4occ8exp5$sig.correlaton
-colMat[which(res.corshilv4occ8exp5$sig.correlaton>0)]<-1
-colMat[which(res.corshilv4occ8exp5$sig.correlaton<0)]<- -1
+colMatlo<-rescor.lolv4occ9exp4f$sig.correlaton
+colMatlo[which(rescor.lolv4occ9exp4f$sig.correlaton>0)]<-1
+colMatlo[which(rescor.lolv4occ9exp4f$sig.correlaton<0)]<- -1
+
+colMatlo<-rescor.lolv4occ9exp4$sig.correlaton
+colMatlo[which(colMatlo>.6)]<-1
+colMatlo[which(colMatlo<(-.6))]<- -1
+colMatlo[which(colMatlo<.6&colMatlo>(-.6))]<-0
+
+graphlo1<-graph_from_adjacency_matrix(colMatlo, mode = c( "undirected"), weighted = T, diag = F,add.colnames = NULL, add.rownames = NULL)
+myedgelistlo<-data.frame(as_edgelist(graphlo1),weight=E(graphlo1)$weight) #just the edges
+
+length(which(myedgelistlo$weight==1))
+length(which(myedgelistlo$weight==-1))
+length(which(myedgelistlo$weight==1))/(length(which(myedgelistlo$weight==1))+length(which(myedgelistlo$weight==-1)))
+
+graphlo2<-graph.edgelist(as.matrix(myedgelistlo[,1:2]),directed=FALSE)
+graphlo2
+
+graphlo2$layout <- layout_in_circle
+verticesgraphlo<-data.frame(otu=rownames(as.matrix(V(graphlo2))))
+colorgraphlo<-merge(verticesgraphlo,labelsall,"otu",all.y=F,all.x=F,sort=F)
+plot(graphlo2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistlo$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphlo$color)#,layout=l3
+
+colorgraphlo[which(colorgraphlo$group=="Mesofauna"),]
+colorgraphlo[which(colorgraphlo$group2=="PhotosyntheticBacteria"),]
+
+myedgelistlo[which(myedgelistlo$X1=="B783ef4ce2388b995de6b9b27b0c9209e"|myedgelistlo$X2=="B783ef4ce2388b995de6b9b27b0c9209e"),]
+
+
+
+##### me #####
+#creating sparse matrix
+colMatme<-rescor.melv4occ9exp4f$sig.correlaton
+colMatme[which(rescor.melv4occ9exp4f$sig.correlaton>0)]<-1
+colMatme[which(rescor.melv4occ9exp4f$sig.correlaton<0)]<- -1
+
+colMatme<-rescor.melv3occ9exp4$sig.correlaton
+colMatme[which(colMatme>.6)]<-1
+colMatme[which(colMatme<(-.6))]<- -1
+colMatme[which(colMatme<.6&colMatme>(-.6))]<-0
+
+graphme1<-graph_from_adjacency_matrix(colMatme, mode = c( "undirected"), weighted = T, diag = F,add.colnames = NULL, add.rownames = NULL)
+myedgelistme<-data.frame(as_edgelist(graphme1),weight=E(graphme1)$weight) #just the edges
+
+length(which(myedgelistme$weight==1))
+length(which(myedgelistme$weight==-1))
+length(which(myedgelistme$weight==1))/(length(which(myedgelistme$weight==1))+length(which(myedgelistme$weight==-1)))
+
+graphme2<-graph.edgelist(as.matrix(myedgelistme[,1:2]),directed=FALSE)
+graphme2
+
+graphme2$layout <- layout_in_circle
+verticesgraphme<-data.frame(otu=rownames(as.matrix(V(graphme2))))
+colorgraphme<-merge(verticesgraphme,labelsall,"otu",all.y=F,all.x=F,sort=F)
+plot(graphme2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistme$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphme$color)#,layout=l3
+
+colorgraphme[which(colorgraphme$group=="Mesofauna"),]
+myedgelistme[which(myedgelistme$X1=="Nb85db42310af5ddb08354eef2427cc8e"|myedgelistme$X2=="Nb85db42310af5ddb08354eef2427cc8e"),]
+
+
+
+
+##### hi #####
+#creating sparse matrix
+colMathi<-rescor.hilv4occ9exp4f$sig.correlaton
+colMathi[which(rescor.hilv4occ9exp4f$sig.correlaton>0)]<-1
+colMathi[which(rescor.hilv4occ9exp4f$sig.correlaton<0)]<- -1
+
+colMathi<-rescor.hilv4occ9exp4$sig.correlaton
+colMathi[which(colMathi>.6)]<-1
+colMathi[which(colMathi<(-.6))]<- -1
+colMathi[which(colMathi<.6&colMathi>(-.6))]<-0
+
+graphhi1<-graph_from_adjacency_matrix(colMathi, mode = c( "undirected"), weighted = T, diag = F,add.colnames = NULL, add.rownames = NULL)
+myedgelisthi<-data.frame(as_edgelist(graphhi1),weight=E(graphhi1)$weight) #just the edges
+
+length(which(myedgelisthi$weight==1))
+length(which(myedgelisthi$weight==-1))
+length(which(myedgelisthi$weight==1))/(length(which(myedgelisthi$weight==1))+length(which(myedgelisthi$weight==-1)))
+
+graphhi2<-graph.edgelist(as.matrix(myedgelisthi[,1:2]),directed=FALSE)
+graphhi2
+
+graphhi2$layout <- layout_in_circle
+verticesgraphhi<-data.frame(otu=rownames(as.matrix(V(graphhi2))))
+colorgraphhi<-merge(verticesgraphhi,labelsall,"otu",all.y=F,all.x=F,sort=F)
+plot(graphhi2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelisthi$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphhi$color)#,layout=l3
+
+colorgraphhi[which(colorgraphhi$group=="Mesofauna"),]
+
+
+
+graph.density(graphlo2)
+graph.density(graphme2)
+graph.density(graphhi2)
+
+length(E(graphlo2))/length(V(graphlo2))
+length(E(graphme2))/length(V(graphme2))
+length(E(graphhi2))/length(V(graphhi2))
+
+
+
+
+
 
 colMat<-res.corslolv4occ8exp5$sig.correlaton
 colMat[which(res.corslolv4occ8exp5$sig.correlaton>0)]<-1
@@ -306,6 +647,65 @@ plot(graph3,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedge
 
 
 
+##### Chord diagrams #####
+(length(which(res.corslo$sig.correlaton!=0))-dim(res.corslo$sig.correlaton)[1])/2
+colMat <- matrix(NA, nrow = nrow(rescor.lolv4occ10exp4$sig.correlaton), ncol = ncol(rescor.lolv4occ10exp4$sig.correlaton))
+colMat[which(res.cors$sig.correlaton > 0.63, arr.ind = TRUE)] <- "red"
+colMat[which(res.cors$sig.correlaton < -0.63, arr.ind = TRUE)] <- "blue"
+chordDiagram(res.cors$sig.correlaton, symmetric = TRUE,annotationTrack = c("name", "grid"),grid.col = "grey",col=colMat)
+
+colMat <- matrix(NA, nrow = nrow(res.corshiocc8$correlation), ncol = ncol(res.corshiocc8$correlation),dimnames = list(rownames(res.corshiocc8$correlation),rownames(res.corshiocc8$correlation)))
+colMat[which(res.corshiocc8$correlation > 0.5, arr.ind = TRUE)] <- 1
+colMat[which(res.corshiocc8$correlation < -0.5, arr.ind = TRUE)] <- -1
+colMat[which(res.corshiocc8$correlation<.5&res.corshiocc8$correlation>(-.5))]<-0
+
+length(which(res.cor90$correlation>.7&res.cor90$correlation<1,arr.ind = T))
+length(which(res.corshi8$correlation>.7&res.corshi8$correlation<1,arr.ind = T))
+hist(res.cors$correlation)
+hist(res.corshi8$correlation)
+
+
+
+
+
+#Trial runs were stored in MovingUphill3_Workspace_Analysis3b.Rdata
+#fit.lvmhiocc6 
+#load("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis3b.Rdata")
+#fit.hilv4occ8exp5
+#fit.lolv4occ8exp5
+#fit.hilv4occ8exp4 (and b)
+#fit.melv4occ8exp4
+
+#res.cors (hi with 4latent)
+#res.corslo (lo with 4 latent)
+#res.corshi8 (hi with 8 latent) - hardly any correlations significant or strong
+#res.corshiocc8 (hi with 8 occurrences)
+#res.corshiocc8.90 (hi with 8 occurrences and 90CI)
+#res.corshiocc6 (hi 6 occ)
+#res.corshilv4occ8exp5 (hi with 5 environmetnal variables)
+#res.corslolv4occ8exp5
+
+
+
+##### Checking the models with multiple regressions ####
+#there is no negative binomial option in glm, so using quasipoisson
+#overall, I think I'm ok with th number of nonzero points (9 or greater) and having 4 explanatory variables
+hmscXe
+hmscYe
+
+#n=10
+sum(hmscYe[,17]>0)
+m1<-glm(hmscYe[,17]~hmscXe[,2:5],family=quasipoisson)
+m1<-glm(hmscYe[,17]~hmscXe[,c(2,3,4)],family=quasipoisson)
+m1<-glm(hmscYe[,17]~hmscXe[,c(2,4,5)],family=quasipoisson)
+summary(m1)
+m1fitted<-predict(m1,type="response")
+plot(hmscXe[,3],hmscYe[,17])
+points(hmscXe[,3],m1fitted,col=2)
+#
+
+
+##### funcions #####
 #90% CI
 get.residual.cor2<-function (object, est = "median", prob = .9) 
 {
