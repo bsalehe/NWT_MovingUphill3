@@ -305,9 +305,10 @@ colnames(labelcols)=c("group","color")
 
 # including photosynthetic/not information
 labelcols<-data.frame(rbind(c("PhotosyntheticEukaryota","#49874c"),# 466D24
-                            c("NonphotosyntheticEukaryota","#673482"),
+                            c("HeterotrophicEukaryota","#673482"),
                             c("PhotosyntheticBacteria","#94BA3C"),
-                            c("NonphotosyntheticBacteria","#7879BC"),
+                            c("HeterotrophicBacteria","#7879BC"),
+                            c("ChemoautotrophicBacteria","#6295cd"),
                             c("UnknownEukaryota","gray30"),
                             c("UnknownBacteria","gray70"),
                             c("Mesofauna","#ff9c34"),
@@ -363,10 +364,10 @@ colMatlo<-rescor.lolv4occ9exp4f$sig.correlaton
 colMatlo[which(rescor.lolv4occ9exp4f$sig.correlaton>0)]<-1
 colMatlo[which(rescor.lolv4occ9exp4f$sig.correlaton<0)]<- -1
 
-colMatlo<-rescor.lolv4occ9exp4$sig.correlaton
-colMatlo[which(colMatlo>.6)]<-1
-colMatlo[which(colMatlo<(-.6))]<- -1
-colMatlo[which(colMatlo<.6&colMatlo>(-.6))]<-0
+#colMatlo<-rescor.lolv4occ9exp4$sig.correlaton
+#colMatlo[which(colMatlo>.6)]<-1
+#colMatlo[which(colMatlo<(-.6))]<- -1
+#colMatlo[which(colMatlo<.6&colMatlo>(-.6))]<-0
 
 graphlo1<-graph_from_adjacency_matrix(colMatlo, mode = c( "undirected"), weighted = T, diag = F,add.colnames = NULL, add.rownames = NULL)
 myedgelistlo<-data.frame(as_edgelist(graphlo1),weight=E(graphlo1)$weight) #just the edges
@@ -381,7 +382,10 @@ graphlo2
 graphlo2$layout <- layout_in_circle
 verticesgraphlo<-data.frame(otu=rownames(as.matrix(V(graphlo2))))
 colorgraphlo<-merge(verticesgraphlo,labelsall,"otu",all.y=F,all.x=F,sort=F)
-plot(graphlo2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistlo$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphlo$color)#,layout=l3
+
+#pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networklocircle.pdf") 
+plot(graphlo2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistlo$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphlo$color)
+dev.off()
 
 colorgraphlo[which(colorgraphlo$group=="Mesofauna"),]
 colorgraphlo[which(colorgraphlo$group2=="PhotosyntheticBacteria"),]
@@ -396,10 +400,10 @@ colMatme<-rescor.melv4occ9exp4f$sig.correlaton
 colMatme[which(rescor.melv4occ9exp4f$sig.correlaton>0)]<-1
 colMatme[which(rescor.melv4occ9exp4f$sig.correlaton<0)]<- -1
 
-colMatme<-rescor.melv3occ9exp4$sig.correlaton
-colMatme[which(colMatme>.6)]<-1
-colMatme[which(colMatme<(-.6))]<- -1
-colMatme[which(colMatme<.6&colMatme>(-.6))]<-0
+#colMatme<-rescor.melv3occ9exp4$sig.correlaton
+#colMatme[which(colMatme>.6)]<-1
+#colMatme[which(colMatme<(-.6))]<- -1
+#colMatme[which(colMatme<.6&colMatme>(-.6))]<-0
 
 graphme1<-graph_from_adjacency_matrix(colMatme, mode = c( "undirected"), weighted = T, diag = F,add.colnames = NULL, add.rownames = NULL)
 myedgelistme<-data.frame(as_edgelist(graphme1),weight=E(graphme1)$weight) #just the edges
@@ -414,7 +418,9 @@ graphme2
 graphme2$layout <- layout_in_circle
 verticesgraphme<-data.frame(otu=rownames(as.matrix(V(graphme2))))
 colorgraphme<-merge(verticesgraphme,labelsall,"otu",all.y=F,all.x=F,sort=F)
+#pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networkmecircle.pdf") 
 plot(graphme2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistme$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphme$color)#,layout=l3
+dev.off()
 
 colorgraphme[which(colorgraphme$group=="Mesofauna"),]
 myedgelistme[which(myedgelistme$X1=="Nb85db42310af5ddb08354eef2427cc8e"|myedgelistme$X2=="Nb85db42310af5ddb08354eef2427cc8e"),]
@@ -428,10 +434,10 @@ colMathi<-rescor.hilv4occ9exp4f$sig.correlaton
 colMathi[which(rescor.hilv4occ9exp4f$sig.correlaton>0)]<-1
 colMathi[which(rescor.hilv4occ9exp4f$sig.correlaton<0)]<- -1
 
-colMathi<-rescor.hilv4occ9exp4$sig.correlaton
-colMathi[which(colMathi>.6)]<-1
-colMathi[which(colMathi<(-.6))]<- -1
-colMathi[which(colMathi<.6&colMathi>(-.6))]<-0
+#colMathi<-rescor.hilv4occ9exp4$sig.correlaton
+#colMathi[which(colMathi>.6)]<-1
+#colMathi[which(colMathi<(-.6))]<- -1
+#colMathi[which(colMathi<.6&colMathi>(-.6))]<-0
 
 graphhi1<-graph_from_adjacency_matrix(colMathi, mode = c( "undirected"), weighted = T, diag = F,add.colnames = NULL, add.rownames = NULL)
 myedgelisthi<-data.frame(as_edgelist(graphhi1),weight=E(graphhi1)$weight) #just the edges
@@ -446,8 +452,9 @@ graphhi2
 graphhi2$layout <- layout_in_circle
 verticesgraphhi<-data.frame(otu=rownames(as.matrix(V(graphhi2))))
 colorgraphhi<-merge(verticesgraphhi,labelsall,"otu",all.y=F,all.x=F,sort=F)
+#pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networkhicircle.pdf") 
 plot(graphhi2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelisthi$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphhi$color)#,layout=l3
-
+dev.off()
 colorgraphhi[which(colorgraphhi$group=="Mesofauna"),]
 
 

@@ -85,3 +85,45 @@ head(biogeo6)
 cbind(biogeo6$plantcover,biogeo6$Plant_Dens,biogeo6$lomehi)
 #it is kind of strange that some of the plots with 0 plants were classified as medium, but there is not much I can do if that's how the pca shakes out. i'll just have to see what the networks look like
 
+
+
+###### Looking at variation in env characteristics ######
+
+biogeom<-biogeo6noneg%>%
+  select(pH:TC,Plant_Dens:Plant_Div,plantcover:pca1,lomehi)%>%
+  group_by(lomehi)%>%
+  summarise_at(vars(pH:pca1),funs(sd(.,na.rm=T)/mean(.,na.rm=T)))%>% #cv only makes sense for variables with only positive numbers
+  #summarise_at(vars(pH:pca1),funs(sd(.,na.rm=T)))%>%
+  #summarise_at(vars(pH:pca1),funs(mean(.,na.rm=T)))%>%
+  mutate(lomehi=factor(lomehi,levels=c("lo","me","hi")))%>%
+  gather(variable,range,pH:pca1)
+as.data.frame(biogeom)
+
+range(biogeo2$pH,na.rm=T)
+
+ggplot(biogeom,aes(x=lomehi,y=range,color=variable))+
+  labs(x = "",y="Range")+
+  geom_line(stat = "identity", position = "identity",size=.5)+
+  geom_point(size=2)+
+  facet_wrap(~variable,scales="free")
+
+#using sd
+#variables with highest variation in late succession: MicC, MicN, moisture, NH4, pc1,plant density, plant diversity, plantcover,snowdepth,TC,TN,WHC
+#variables with highest variation in lo/me or not much different from late: NO3, pH
+#there is more variation in th high plots, in regular correlation networks you would think this would create more complex networks b/c there are more niches and you would capture species that cooccur due to shared environment (which is the opposite of what I see anyway). But taking out the effect of env you should be removing that hterogeneity, so I don't think there should be any lasting effect on the networks
+
+#using CV (for positive variables)
+range(biogeo2$moisture,na.rm=T)
+sort(biogeo6$MicC)
+sort(biogeo6noneg$MicC)
+
+biogeo6noneg<-biogeo6%>%
+  mutate(MicC=ifelse(MicC>0,MicC,0))%>%
+  mutate(MicN=ifelse(MicN>0,MicN,0))%>%
+  mutate(NO3=ifelse(NO3>0,NO3,0))%>%
+  mutate(NH4=ifelse(NH4>0,NH4,0))
+
+#negatives: MicC, MicN, NO3, NH4, pca1
+#putting zero for all negatives from above (not pca1)
+#highest variation in late: moisture, snowdepth, TC, TN, WHC, NO3
+#highest in lo/me: pH, plant dens, plant div, plant cov,MicC, MicN, NH4 

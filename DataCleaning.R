@@ -545,7 +545,7 @@ ind<-which(labelsEukS2$labels=="Archaeplastida"|labelsEukS2$labels=="Photosynthe
 labelsEukS2$group2[ind]<-"PhotosyntheticEukaryota"
 ind<-which(labelsEukS2$labels=="Unknown_Eukaryota"|labelsEukS2$labels=="Unknown_Stramenopiles")
 labelsEukS2$group2[ind]<-"UnknownEukaryota"
-labelsEukS2$group2[which(is.na(labelsEukS2$group2)==T)]<-"NonphotosyntheticEukaryota"
+labelsEukS2$group2[which(is.na(labelsEukS2$group2)==T)]<-"HeterotrophicEukaryota"
 
 head(labelsEukS2)
 
@@ -606,6 +606,15 @@ tax_table(datEukN3)<-cbind(tax_table(datEukN3),labelsEukN)
 ##### Bacteria #####
 
 #labelsBac<-data.frame(rep("Bacteria",dim(tax_table(datBacS3))[1]))
+#I check the dataset for chemoautotrophs, no methanogens, yes ammonia oxidizers, 
+#the crenarchaeota in archaea: the o__Nitrososphaerales is an ammonia oxidizer(all the abundant crenarchaeota are these), the other less abundant orders (like NRP-J and crenarcheales) I'm not sure about but there are chemoorganotrophs in crenarchaeota so I can't assume they are autotrophs
+#Ammonia oxidizing bacteria: 
+#f__Nitrosomonadaceae (in Proteobacteria)
+#p__Nitrospirae in bacteria (in Nitrospiraceae one genus in this group is chemohterotrophic but it is Thermodesulfovibrio but it is thermophillic so it is most likely that the ones present here are the chemoautotrophic ones), there are other candidate(?) families in the Nitrospirales that I can't find much about, I think I will keep them all labeled the same
+https://en.wikipedia.org/wiki/Microbial_metabolism#Sulfur_oxidation)
+https://link.springer.com/referenceworkentry/10.1007%2F978-3-642-38954-2_126
+#The bradyrhizobiaceae (in proteobacteria) is complicated. the only species listed are bradyrhizobium (heterotroph that fixes N, although in papers some strains can be chemoautotrophs) and other species that I dont know what they do or there is no genus/species listed. Some in this family however are photosynthetic. I will leave them all as heterotrophs for now.
+#The Planctomycetes are also complicated. there are five genera that do anammox (chemoautotrophic), none of those genera are found in this dataset, however many of the genus/species info are blanks. the class Pla3, Pla4 (and group VI) are anammox according to the following paper (http://aem.asm.org/content/73/15/4707.full). also according to that paper the genera in the o__Gemmatales and Pirellulales orders are all heterotrophs so I will label those as such
 
 unique(tax_table(datBacS3)[,"Rank2"])
 
@@ -624,19 +633,43 @@ ind<-which(tax_table(datBacS3)[,"Rank3"]=="c__Chloroflexi")
 labelsBac[ind]<-"Photosynthetic_Chloroflexi"
 ind<-which(labelsBac=="Chloroflexi")
 labelsBac[ind]<-"Heterotrophic_Chloroflexi"
+#the o__Nitrososphaerales in the Crenarchaeota
+ind<-which(labelsBac=="Crenarchaeota")
+labelsBac[ind]<-"Unknown_Crenarchaeota"
+ind<-which(tax_table(datBacS3)[,"Rank4"]=="o__Nitrososphaerales")
+labelsBac[ind]<-"Chemoautotrophic_Crenarchaeota"
+#the nitrosomonadaceae are chemoautotrophs and the bradyrhizobiaceae are lots of things
+ind<-which(labelsBac=="Proteobacteria")
+labelsBac[ind]<-"Heterotrophic_Proteobacteria"
+ind<-which(tax_table(datBacS3)[,"Rank5"]=="f__Nitrosomonadaceae")
+labelsBac[ind]<-"Chemoautotrophic_Proteobacteria"
+#ind<-which(tax_table(datBacS3)[,"Rank5"]=="f__Bradyrhizobiaceae")
+#labelsBac[ind]<-"Unknown_Proteobacteria"
+ind<-which(labelsBac=="Planctomycetes")
+labelsBac[ind]<-"Unknown_Planctomycetes"
+ind<-which(tax_table(datBacS3)[,"Rank3"]=="c__Pla4"|tax_table(datBacS3)[,"Rank3"]=="c__Pla3")
+labelsBac[ind]<-"Chemoautotrophic_Planctomycetes"
+ind<-which(tax_table(datBacS3)[,"Rank4"]=="o__Gemmatales"|tax_table(datBacS3)[,"Rank4"]=="o__Pirellulales")
+labelsBac[ind]<-"Heterotrophic_Planctomycetes"
+
+
+unique(tax_table(datBacS3)[ind,])
 
 unique(labelsBac)
 colnames(labelsBac)<-"labels"
 
 labelsBac2<-as.data.frame(labelsBac)
 labelsBac2$group<-"Bacteria"
+
 labelsBac2$group2<-NA
 ind<-which(labelsBac2$labels=="Photosynthetic_Chloroflexi"|labelsBac2$labels=="Cyanobacteria"|labelsBac2$labels=="Chlorobi") 
 labelsBac2$group2[ind]<-"PhotosyntheticBacteria"
-ind<-which(labelsBac2$labels=="Unknown_Chloroflexi"|labelsBac2$labels=="Unknown_Bacteria") 
+ind<-which(labelsBac2$labels=="Unknown_Chloroflexi"|labelsBac2$labels=="Unknown_Bacteria"|labelsBac2$labels=="Unknown_Planctomycetes"|labelsBac2$labels=="Unknown_Crenarchaeota") 
 labelsBac2$group2[ind]<-"UnknownBacteria"
+ind<-which(labelsBac2$labels=="Chemoautotrophic_Crenarchaeota"|labelsBac2$labels=="Chemoautotrophic_Proteobacteria"|labelsBac2$labels=="Nitrospirae"|labelsBac2$labels=="Chemoautotrophic_Planctomycetes") 
+labelsBac2$group2[ind]<-"ChemoautotrophicBacteria"
 ind<-which(is.na(labelsBac2$group2)==T)
-labelsBac2$group2[ind]<-"NonphotosyntheticBacteria"
+labelsBac2$group2[ind]<-"HeterotrophicBacteria"
 head(labelsBac2)
 
 tax_table(datBacS3)<-cbind(tax_table(datBacS3),labelsBac)
