@@ -16,6 +16,7 @@ comm.dataBac<-datBacS3otu3
 comm.dataITS<-datITSS3otu3
 
 #microbes count data, filtered doubletons, singletons, taxa with < .002 summed rel abundance
+#use this
 comm.dataEukS<-datEukS3cotu3
 comm.dataEukN<-datEukN3cotu3
 comm.dataBac<-datBacS3cotu3
@@ -88,7 +89,7 @@ rcorr(as.matrix(hmscX[,2:(dim(hmscX)[2]-1)]))
 #plot(hmscX$TC,hmscX$moisture)
 
 #select lo/me/hi
-ind<-which(hmscX$lomehi=="lo")
+ind<-which(hmscX$lomehi=="hi")
 hmscXb<-hmscX[ind,]
 hmscYb<-hmscY[ind,]
 
@@ -145,8 +146,9 @@ covX <- hmscXe[,-1]
 #fit.lolv4occ9exp4f - f means final model fitted with long mcmc chain, start 2:00pm, model finished 4:20pm, rescor finished 
 #fit.melv4occ9exp4f - f means final model fitted with long mcmc chain
 #fit.hilv4occ9exp4f - f means final model fitted with long mcmc chain
-#fit.lolv4occ9exp4nosite - with no site random effect 
+#fit.lolv4occ9exp4nosite - with no site random effect, fit with long chain
 #fit.lolv4occ9exp0nosite - with no site random effct and only latent vaiables
+#fit.melv4occ9exp4nosite
 
 
 #Using the default mcmc parameters, the models take about 2 hrs to fit.  mcmc.control = list(n.burnin = 10000, n.iteration = 40000, n.thin = 30, seed = 123)
@@ -154,7 +156,7 @@ covX <- hmscXe[,-1]
 # in the tutorial they add this to the model fitting code, hypparams = c(20,20,20,20), however, now if you wanted to change this you need to put it in a prior.control statement or something. I am just using the default here
 fit.hilv4occ9exp4f <- boral(y = hmscYe, X = covX, num.lv = 4, family = "negative.binomial", row.eff = "random", save.model = TRUE, calc.ics = T, mcmc.control = list(n.burnin = 10000, n.iteration = 40000, n.thin = 30, seed = 123))#calc.ics = F, use ics (information criteria at your own risk) 
 #fitting models for comparing percent covariance explained by env, take row.eff out
-fit.lolv4occ9exp4nosite <- boral(y = hmscYe, X = covX, num.lv = 4, family = "negative.binomial", save.model = TRUE, calc.ics = T, mcmc.control = list(n.burnin = 10000, n.iteration = 40000, n.thin = 30, seed = 123))
+fit.hilv4occ9exp4nosite <- boral(y = hmscYe, X = covX, num.lv = 4, family = "negative.binomial", save.model = TRUE, calc.ics = T, mcmc.control = list(n.burnin = 10000, n.iteration = 40000, n.thin = 30, seed = 123))
 fit.lolv4occ9exp0nosite <- boral(y = hmscYe, X = NULL, num.lv = 4, family = "negative.binomial", save.model = TRUE, calc.ics = T, mcmc.control = list(n.burnin = 10000, n.iteration = 40000, n.thin = 30, seed = 123))
 
 
@@ -168,11 +170,13 @@ rescor.hilv4occ9exp4f <- get.residual.cor(fit.hilv4occ9exp4f)
 
 rescor.lolv4occ9exp4nosite <- get.residual.cor(fit.lolv4occ9exp4nosite) 
 rescor.lolv4occ9exp0nosite <- get.residual.cor(fit.lolv4occ9exp0nosite) 
+rescor.melv4occ9exp4nosite <- get.residual.cor(fit.melv4occ9exp4nosite) 
+rescor.hilv4occ9exp4nosite <- get.residual.cor(fit.hilv4occ9exp4nosite) 
 
 
 #Use modified function below to get 90% CI
 #res.corshiocc8.90<-get.residual.cor2(fit.lvmhiocc8)
-save.image("~/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis3.Rdata")  
+save.image("~/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/MovingUphill3_Workspace_Analysis2.Rdata")  
 
 
 ##### Look at results and check convergence/fit #####
@@ -309,12 +313,13 @@ labelcols<-data.frame(rbind(c("PhotosyntheticEukaryota","#49874c"),# 466D24
                             c("PhotosyntheticBacteria","#94BA3C"),
                             c("HeterotrophicBacteria","#7879BC"),
                             c("ChemoautotrophicBacteria","#6295cd"),
-                            c("UnknownEukaryota","gray30"),
+                            c("UnknownEukaryota","gray50"),
                             c("UnknownBacteria","gray70"),
                             c("Mesofauna","#ff9c34"),
                             c("Fungi","#F6EC32"),
                             c("Plant","#E95275")))
 colnames(labelcols)=c("group2","color")
+
 
 head(labelfile)
 
@@ -322,6 +327,7 @@ head(labelfile)
 labelsall<-merge(labelfile,labelcols,"group2",all.x=F,all.y=F) #"labels"
 labelsall$color<-as.character(labelsall$color)
 head(labelsall)
+labelsall$group2<-factor(labelsall$group2,levels=c("HeterotrophicBacteria","PhotosyntheticBacteria","ChemoautotrophicBacteria","UnknownBacteria","Fungi","HeterotrophicEukaryota","PhotosyntheticEukaryota","UnknownEukaryota","Mesofauna","Plant"))
 
 #old                            
 # c("NonphotosyntheticEukaryota","#673482"),
@@ -347,14 +353,15 @@ head(labelsall)
 
 #colnames(labelcols)=c("labels","color")
 
-pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/legend.pdf")
+pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/legend2.pdf")
 plot(c(1,1),c(1,1))
-legend("topright",c("Bacteria","Small Eukaryota","Mesofauna","Fungi","Plants"),pt.bg=c("#7879BC","#94BA3C","#ff9c34","#F6EC32","#E95275"),bty="n",pch=21,cex=1.4)
-plot(c(1,1),c(1,1))
-legend("topright",c("PhotosyntheticBacteria","NonphotosyntheticBacteria","UnknownBacteria","PhotosyntheticEukaryota","NonphotosyntheticEukaryota","UnknownEukaryota","Mesofauna","Fungi","Plants"),pt.bg=c("#94BA3C","#7879BC","gray70","#466D24","#673482","gray30","#ff9c34","#F6EC32","#E95275"),bty="n",pch=21,cex=1.4)
+#legend("topright",c("Bacteria","Small Eukaryota","Mesofauna","Fungi","Plants"),pt.bg=c("#7879BC","#94BA3C","#ff9c34","#F6EC32","#E95275"),bty="n",pch=21,cex=1.4)
+legend("topright",c("Heterotrophic bacteria","Photosynthetic bacteria","Chemoautotophic bacteria","Unknown bacteria","Heterotrophic Eukaryota","Photosynthetic Eukaryota","UnknownEukaryota","Mesofauna","Fungi","Plants"),pt.bg=c("#7879BC","#94BA3C","#6295cd","gray70","#673482","#466D24","gray50","#ff9c34","#F6EC32","#E95275"),bty="n",pch=21,cex=1.4)
+legend("topleft",c("Positive","Negative"),col=c("#ce4d42","#687dcb"),lty=1,bty="n",cex=1.4)
+#legend("top",as.character(1:10),col=c("#111110","#660011","#A80013","#118877","#4c3d3e","#118877","#7f783f","#aa8888","#aabbdd","#ff99a4"),lty=1,lwd=3)
 dev.off()
-c("UnknownEukaryota","gray30"),
-c("UnknownBacteria","gray70"),
+ 
+#colors from nico: 111110,660011,112288,A80013,4c3d3e,118877,7f783f,aa8888,aabbdd,ff99a4, Ffccd1,ddd7d7,d8d3ad,e5001a
 
 
 
@@ -362,12 +369,24 @@ c("UnknownBacteria","gray70"),
 #creating sparse matrix
 colMatlo<-rescor.lolv4occ9exp4f$sig.correlaton
 colMatlo[which(rescor.lolv4occ9exp4f$sig.correlaton>0)]<-1
+#colMatlo[which(rescor.lolv4occ9exp4f$sig.correlaton>0)]<-0
 colMatlo[which(rescor.lolv4occ9exp4f$sig.correlaton<0)]<- -1
+#colMatlo[which(rescor.lolv4occ9exp4f$sig.correlaton<0)]<- 0
 
-#colMatlo<-rescor.lolv4occ9exp4$sig.correlaton
+colMatlo<-rescor.lolv4occ9exp4nosite$sig.correlaton
+colMatlo[which(rescor.lolv4occ9exp4nosite$sig.correlaton>0)]<-1
+colMatlo[which(rescor.lolv4occ9exp4nosite$sig.correlaton<0)]<- -1
+
+#colMatlo<-rescor.lolv4occ9exp4f$sig.correlaton
 #colMatlo[which(colMatlo>.6)]<-1
 #colMatlo[which(colMatlo<(-.6))]<- -1
 #colMatlo[which(colMatlo<.6&colMatlo>(-.6))]<-0
+
+temp<-colMatlo[upper.tri(colMatlo)]
+temp2<-temp[temp!=0]
+hist(temp2)
+sort(temp2)
+length(temp2)
 
 graphlo1<-graph_from_adjacency_matrix(colMatlo, mode = c( "undirected"), weighted = T, diag = F,add.colnames = NULL, add.rownames = NULL)
 myedgelistlo<-data.frame(as_edgelist(graphlo1),weight=E(graphlo1)$weight) #just the edges
@@ -379,19 +398,28 @@ length(which(myedgelistlo$weight==1))/(length(which(myedgelistlo$weight==1))+len
 graphlo2<-graph.edgelist(as.matrix(myedgelistlo[,1:2]),directed=FALSE)
 graphlo2
 
-graphlo2$layout <- layout_in_circle
 verticesgraphlo<-data.frame(otu=rownames(as.matrix(V(graphlo2))))
 colorgraphlo<-merge(verticesgraphlo,labelsall,"otu",all.y=F,all.x=F,sort=F)
+#shapesgraplo<-ifelse(colorgraphlo$group%in%c("Eukaryota"),"csquare",'circle')
+
+##use colorgraphlo$group2 for ordering, if ther are ties it leaves them in thir original order, thus is still preserves some of the ordering that makes the lines look nice
+orderlo<-order(colorgraphlo$group2)
+#orderlo<-order(verticesgraphlo$otu)
+graphlo2$layout <- layout_in_circle(graphlo2,order=orderlo)
+#graphlo2$layout <- layout_in_circle
 
 #pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networklocircle.pdf") 
-plot(graphlo2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistlo$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphlo$color)
-dev.off()
+plot(graphlo2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistlo$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphlo$color,edge.width=.7)#,vertex.shape=shapesgraplo
+#dev.off()
 
 colorgraphlo[which(colorgraphlo$group=="Mesofauna"),]
 colorgraphlo[which(colorgraphlo$group2=="PhotosyntheticBacteria"),]
 
 myedgelistlo[which(myedgelistlo$X1=="B783ef4ce2388b995de6b9b27b0c9209e"|myedgelistlo$X2=="B783ef4ce2388b995de6b9b27b0c9209e"),]
 
+temp<-colorgraphlo[which(colorgraphlo$group=="Mesofauna"),"otu"]
+temp2<-myedgelistlo[which(myedgelistlo$X1%in%temp|myedgelistlo$X2%in%temp),]
+dim(temp2)
 
 
 ##### me #####
@@ -400,10 +428,14 @@ colMatme<-rescor.melv4occ9exp4f$sig.correlaton
 colMatme[which(rescor.melv4occ9exp4f$sig.correlaton>0)]<-1
 colMatme[which(rescor.melv4occ9exp4f$sig.correlaton<0)]<- -1
 
-#colMatme<-rescor.melv3occ9exp4$sig.correlaton
-#colMatme[which(colMatme>.6)]<-1
-#colMatme[which(colMatme<(-.6))]<- -1
-#colMatme[which(colMatme<.6&colMatme>(-.6))]<-0
+# colMatme<-rescor.melv4occ9exp4f$sig.correlaton
+# colMatme[which(colMatme>.6)]<-1
+# colMatme[which(colMatme<(-.6))]<- -1
+# colMatme[which(colMatme<.6&colMatme>(-.6))]<-0
+
+colMatme<-rescor.melv4occ9exp4nosite$sig.correlaton
+colMatme[which(rescor.melv4occ9exp4nosite$sig.correlaton>0)]<-1
+colMatme[which(rescor.melv4occ9exp4nosite$sig.correlaton<0)]<- -1
 
 graphme1<-graph_from_adjacency_matrix(colMatme, mode = c( "undirected"), weighted = T, diag = F,add.colnames = NULL, add.rownames = NULL)
 myedgelistme<-data.frame(as_edgelist(graphme1),weight=E(graphme1)$weight) #just the edges
@@ -415,16 +447,22 @@ length(which(myedgelistme$weight==1))/(length(which(myedgelistme$weight==1))+len
 graphme2<-graph.edgelist(as.matrix(myedgelistme[,1:2]),directed=FALSE)
 graphme2
 
-graphme2$layout <- layout_in_circle
 verticesgraphme<-data.frame(otu=rownames(as.matrix(V(graphme2))))
 colorgraphme<-merge(verticesgraphme,labelsall,"otu",all.y=F,all.x=F,sort=F)
-#pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networkmecircle.pdf") 
-plot(graphme2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistme$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphme$color)#,layout=l3
+
+##use colorgraphlo$group2 for ordering, if ther are ties it leaves them in thir original order, thus is still preserves some of the ordering that makes the lines look nice
+orderme<-order(colorgraphme$group2)
+#orderme<-order(verticesgraphme$otu)
+graphme2$layout <- layout_in_circle(graphme2,order=orderme)
+#graphme2$layout <- layout_in_circle
+
+pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networkmecircle.pdf") 
+plot(graphme2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistme$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphme$color,edge.width=.7)#,layout=l3
 dev.off()
 
-colorgraphme[which(colorgraphme$group=="Mesofauna"),]
-myedgelistme[which(myedgelistme$X1=="Nb85db42310af5ddb08354eef2427cc8e"|myedgelistme$X2=="Nb85db42310af5ddb08354eef2427cc8e"),]
-
+temp<-colorgraphme[which(colorgraphme$group=="Mesofauna"),"otu"]
+temp2<-myedgelistme[which(myedgelistme$X1%in%temp|myedgelistme$X2%in%temp),]
+dim(temp2)
 
 
 
@@ -433,11 +471,16 @@ myedgelistme[which(myedgelistme$X1=="Nb85db42310af5ddb08354eef2427cc8e"|myedgeli
 colMathi<-rescor.hilv4occ9exp4f$sig.correlaton
 colMathi[which(rescor.hilv4occ9exp4f$sig.correlaton>0)]<-1
 colMathi[which(rescor.hilv4occ9exp4f$sig.correlaton<0)]<- -1
+#colMathi[which(rescor.hilv4occ9exp4f$sig.correlaton<0)]<- 0
 
-#colMathi<-rescor.hilv4occ9exp4$sig.correlaton
-#colMathi[which(colMathi>.6)]<-1
-#colMathi[which(colMathi<(-.6))]<- -1
-#colMathi[which(colMathi<.6&colMathi>(-.6))]<-0
+# colMathi<-rescor.hilv4occ9exp4f$sig.correlaton
+# colMathi[which(colMathi>.5)]<-1
+# colMathi[which(colMathi<(-.5))]<- -1
+# colMathi[which(colMathi<.5&colMathi>(-.5))]<-0
+
+colMathi<-rescor.hilv4occ9exp4nosite$sig.correlaton
+colMathi[which(rescor.hilv4occ9exp4nosite$sig.correlaton>0)]<-1
+colMathi[which(rescor.hilv4occ9exp4nosite$sig.correlaton<0)]<- -1
 
 graphhi1<-graph_from_adjacency_matrix(colMathi, mode = c( "undirected"), weighted = T, diag = F,add.colnames = NULL, add.rownames = NULL)
 myedgelisthi<-data.frame(as_edgelist(graphhi1),weight=E(graphhi1)$weight) #just the edges
@@ -449,16 +492,35 @@ length(which(myedgelisthi$weight==1))/(length(which(myedgelisthi$weight==1))+len
 graphhi2<-graph.edgelist(as.matrix(myedgelisthi[,1:2]),directed=FALSE)
 graphhi2
 
-graphhi2$layout <- layout_in_circle
 verticesgraphhi<-data.frame(otu=rownames(as.matrix(V(graphhi2))))
 colorgraphhi<-merge(verticesgraphhi,labelsall,"otu",all.y=F,all.x=F,sort=F)
+
+#order starts at 3:00 and goes counterclockwise
+##use colorgraphlo$group2 for ordering, if ther are ties it leaves them in thir original order, thus is still preserves some of the ordering that makes the lines look nice
+orderhi<-order(colorgraphhi$group2)
+#orderhi<-order(verticesgraphhi$otu)
+graphhi2$layout <- layout_in_circle(graphhi2,order=orderhi)
+#graphhi2$layout <- layout_in_circle
+
 #pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networkhicircle.pdf") 
-plot(graphhi2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelisthi$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphhi$color)#,layout=l3
-dev.off()
+plot(graphhi2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelisthi$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphhi$color,edge.width=.7)#,layout=l3  
+#dev.off()
+
 colorgraphhi[which(colorgraphhi$group=="Mesofauna"),]
 
+temp<-colorgraphhi[which(colorgraphhi$group=="Mesofauna"),"otu"]
+temp2<-myedgelisthi[which(myedgelisthi$X1%in%temp|myedgelisthi$X2%in%temp),]
+dim(temp2)
+
+#Creating a subgraph
+colorgraphhi2<-colorgraphhi[which(colorgraphhi$group2=="Mesofauna"),]
+myedgelisthi2<-myedgelisthi[which(myedgelisthi[,"X1"]%in%colorgraphhi2$otu|myedgelisthi[,"X2"]%in%colorgraphhi2$otu),]
+graph3<-subgraph.edges(graphhi2, eids=which(myedgelisthi2[,"X1"]%in%colorgraphhi2$otu|myedgelisthi2[,"X2"]%in%colorgraphhi2$otu), delete.vertices = F)
+plot(graph3,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelisthi2$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphhi$color)#,rescale=F,xlim=c(-1,1),ylim=c(-1,1)
 
 
+
+###### network statistics #######
 graph.density(graphlo2)
 graph.density(graphme2)
 graph.density(graphhi2)
@@ -466,6 +528,21 @@ graph.density(graphhi2)
 length(E(graphlo2))/length(V(graphlo2))
 length(E(graphme2))/length(V(graphme2))
 length(E(graphhi2))/length(V(graphhi2))
+
+temp<-colorgraphlo; temp$ones<-1
+aggregate.data.frame(temp$ones,by=list(temp$group2),sum)
+
+temp<-colorgraphme; temp$ones<-1
+aggregate.data.frame(temp$ones,by=list(temp$group2),sum)
+
+temp<-colorgraphhi; temp$ones<-1
+aggregate.data.frame(temp$ones,by=list(temp$group2),sum)
+
+
+
+
+
+
 
 
 
@@ -710,6 +787,10 @@ m1fitted<-predict(m1,type="response")
 plot(hmscXe[,3],hmscYe[,17])
 points(hmscXe[,3],m1fitted,col=2)
 #
+
+###### Checking whether I should include a random plot effect #####
+
+
 
 
 ##### funcions #####

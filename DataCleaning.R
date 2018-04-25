@@ -463,8 +463,8 @@ datITSS3c<-datITSS2%>%
 
 #labelsEukS<-data.frame(rep("Eukaryota",dim(tax_table(datEukS3))[1]))
 
-#Amoebozoa (kingdom)
-#Alveolata - right now I'm not separating out Ps vs non-Ps b/c there are only 4 dinoflagallata and I can't tell whether they are Ps or not. there are a lot of things classified only to "Alveolata" so I can't tell what function they are.
+#Amoebozoa (phylum)
+#Alveolata (Subkingdom, unranked clade, superphylum) - right now I'm not separating out Ps vs non-Ps b/c there are only 4 dinoflagallata and I can't tell whether they are Ps or not. there are a lot of things classified only to "Alveolata" so I can't tell what function they are.
   #photosynthetic Alveolata (kingdom) (phylum Dinoflagellata: mostly photosynthetic; nonphotosynthetic Protoperidinium, both SL163A10 and Pfiesteria (can if it eats an alga), unknown D244),) only 4 taxa, not sure if they are Ps but I'll leave them here. 
   #nonphotosynthetic Alveolata (phyla Ciliophora(predators), protalveolata, apicomplexa (parasites)), BOLA553 is a near apicomplexan, not sure what SCM37C52 is so I put it here
 #Archaeplastida (major_clade), combine the kingdoms Chloroplastida, Rhodophyceae, Haptophyta, 
@@ -550,6 +550,8 @@ labelsEukS2$group2[which(is.na(labelsEukS2$group2)==T)]<-"HeterotrophicEukaryota
 head(labelsEukS2)
 
 dim(tax_table(datEukS3))
+head(tax_table(datEukS3))
+#tax_table(datEukS3)<-tax_table(datEukS3)[,-15]
 
 #columns 12 and 13 are all NAs
 unique(tax_table(datEukS3)[,11])
@@ -673,6 +675,7 @@ labelsBac2$group2[ind]<-"HeterotrophicBacteria"
 head(labelsBac2)
 
 tax_table(datBacS3)<-cbind(tax_table(datBacS3),labelsBac)
+#tax_table(datBacS3)<-tax_table(datBacS3)[,-8]
 
 dim(tax_table(datBacS3))
 #8 is my column for "bargraph groups"
@@ -742,7 +745,7 @@ save.image("~/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kin
 
 
 ##### Phylogenetic diversity ######
-# This needs to be done before any label changes below b/c it uses the tree data.
+# This needs to be done before any label changes (labels of taxa) below b/c it uses the tree data.
 # I need to use root=T, if I use root=F it cannot calculate the diversity in a sample with only one taxon
 pdEukS<-pd(as.matrix(datEukS3cotu[,-c(1:31)]),phy_tree(datEukS3c),include.root=TRUE) #took 5 minutes
 pdEukN<-pd(as.matrix(datEukN3cotu[,-c(1:31)]),phy_tree(datEukN3c),include.root=TRUE) #took 3 minutes
@@ -836,7 +839,7 @@ names(plantcomp)[1]<-"Sample_name"
 #Remove plant species only present in one or two plots; there are some plots that have plant data but not microbe data. 69 70 71 77 81 108 117 118 147 148 149 151. This is because when we started doing the surveys we were going to all plots for plants and only sample some for microbes, then we realized that that was insane!
 dim(plantcomp)
 plantcomp2<-plantcomp[,colSums(plantcomp>0)>2]
-plantcomp2$LICHEN<-NULL
+plantcomp2$LICHEN<-NULL  #54 plants
 
 
 ###### Make labelfile ######
