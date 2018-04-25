@@ -11,6 +11,10 @@ relBac<-datBacS3k2 %>%
   dplyr::select(Sample_name,Acidobacteria,Actinobacteria,Bacteroidetes,Cyanobacteria,Gemmatimonadetes,Heterotrophic_Chloroflexi,Heterotrophic_Planctomycetes,Heterotrophic_Proteobacteria,Verrucomicrobia,WPS.2) %>%
   gather(Taxa,abun,Acidobacteria:WPS.2) %>%
   mutate(type="A. Bacteria")
+#relBac<-datBacS3k2 %>% 
+#  dplyr::select(Sample_name,Acidobacteria,Actinobacteria,AD3,Armatimonadetes,Bacteroidetes,Cyanobacteria,Gemmatimonadetes,Heterotrophic_Chloroflexi,Heterotrophic_Planctomycetes,Heterotrophic_Proteobacteria,Verrucomicrobia,WPS.2) %>%
+#  gather(Taxa,abun,Acidobacteria:WPS.2) %>%
+#  mutate(type="A. Bacteria")
 
 names(which(colSums(datITSS3k2[,32:42])>.5))
 relITS<-datITSS3k2 %>% 
@@ -18,10 +22,12 @@ relITS<-datITSS3k2 %>%
   gather(Taxa,abun,Ascomycota,Basidiomycota,Glomeromycota,Mortierellomycota) %>%
   mutate(type="B. Fungi")
 
-names(which(colSums(datEukS3k2[,32:46])>4))#,Nonphotosynthetic_Excavata,Photosynthetic_Stramenopiles,
+#if the label has the word "unknown" in it, then I don't want to plot it. it means that is it unknown at a level higher than phylum
+sort(colSums(datEukS3k2[,32:60]))#46
+names(which(colSums(datEukS3k2[,32:60])>1))#,Alveolata,Archaeplastida,Photosynthetic_Stramenopiles,Rhizaria
 relEukS<-datEukS3k2 %>% 
-  dplyr::select(Sample_name,Alveolata,Archaeplastida,Photosynthetic_Stramenopiles,Rhizaria) %>%
-  gather(Taxa,abun,Alveolata,Archaeplastida,Photosynthetic_Stramenopiles,Rhizaria) %>%
+  dplyr::select(Sample_name,Ciliophora,Cercozoa,Chlorophyta,Photosynthetic_Stramenopiles,Heterotrophic_Euglenozoa,Charophyta,Nonphotosynthetic_Stramenopiles) %>%
+  gather(Taxa,abun,Ciliophora,Cercozoa,Chlorophyta,Photosynthetic_Stramenopiles,Heterotrophic_Euglenozoa,Charophyta,Nonphotosynthetic_Stramenopiles) %>%
   mutate(type="C. Small Eukaryotes")
 
 names(which(colSums(datEukN3k2[,32:39])>1))
@@ -33,7 +39,7 @@ relEukN<-datEukN3k2 %>%
 relALL1<-rbind(relBac,relITS,relEukS,relEukN)#
 head(relALL1)
 
-#merge with biogeo6 to get pca1
+#merge with biogeo6 to get pca1, some asmples will be lost b/c we are going from 90 to 75 plots
 relALL<-merge(relALL1,biogeo6,"Sample_name")
 head(relALL)
 
@@ -53,7 +59,7 @@ plotdata$Taxa<-factor(plotdata$Taxa,levels=unique(plotdata$Taxa))
 as.data.frame(plotdata)
 plotdata$lomehi<-factor(plotdata$lomehi,levels=c("lo","me","hi"))
 
-pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/relabuntaxavsplantdensitygroupsR.pdf",width=6.5,height=4.3)#,width=4.3, height=5.3
+pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/relabuntaxavsplantdensitygroupsR2.pdf",width=6.5,height=4.3)#,width=4.3, height=5.3
 ggplot(plotdata,aes(x=lomehi,y=mean_abun,group=typeTaxa,color=Taxa))+
   labs(x = "",y="Relative abundance")+
   theme_classic()+
@@ -66,7 +72,7 @@ ggplot(plotdata,aes(x=lomehi,y=mean_abun,group=typeTaxa,color=Taxa))+
   guides(col = guide_legend(ncol = 1))
 dev.off()
 
-#10 bacteria, 4 fungi, 4 small euks, 4 large euks
+#10 bacteria, 4 fungi, 7 small euks, 4 large euks
 mycols<-c("#4BC366",#light green
           "#D9A125",#yellow
           "#6F94DE",#light blue
@@ -77,24 +83,25 @@ mycols<-c("#4BC366",#light green
           "#cf6f23",#orange
           "#5C426C",#dark purple
           "#6768A3",#medium blue last bact
+          
           "#D9A125",#yellow
           "#B4405E",#red
           "#659125",
           "#6768A3",
-          "#6F94DE",
+
+          "#6F94DE",#light blue
           "#5C426C",#dark purple
           "#D185E0",#light purple
           "#cf6f23",#orange
+          "#D9A125",#yellow
+          "#659125",#green
+          "#ff99a4",#light pink,        
+
           "#B4405E", #red
           "#4BC366", #light green
           "#5C426C", #dark purple
           "#D9A125") #yellow
 
-                    "#659125", #darker green
-          "#D185E0", #light purple
-          "#6768A3", #medium purple
-          "#D9A125", #yellow
-          "#6F94DE") #blue)
 
 #scatter plots
 head(relALL)
@@ -117,9 +124,9 @@ dev.off()
 
 
 #Doing anova on all of the above taxa groups
-length(unique(relALL$Taxa))
-anovaoutput<-data.frame(Taxa=rep(NA,22),F=rep(NA,22),P=rep(NA,22))
-for(i in 1:22){
+ind<-length(unique(relALL$Taxa))
+anovaoutput<-data.frame(Taxa=rep(NA,ind),F=rep(NA,ind),P=rep(NA,ind))
+for(i in 1:ind){
   current.taxa<-unique(relALL$Taxa)[i]
   temp<-relALL %>%
     filter(Taxa==current.taxa)

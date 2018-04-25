@@ -149,6 +149,7 @@ covX <- hmscXe[,-1]
 #fit.lolv4occ9exp4nosite - with no site random effect, fit with long chain
 #fit.lolv4occ9exp0nosite - with no site random effct and only latent vaiables
 #fit.melv4occ9exp4nosite
+#fit.hilv4occ9exp4nosite
 
 
 #Using the default mcmc parameters, the models take about 2 hrs to fit.  mcmc.control = list(n.burnin = 10000, n.iteration = 40000, n.thin = 30, seed = 123)
@@ -538,9 +539,27 @@ aggregate.data.frame(temp$ones,by=list(temp$group2),sum)
 temp<-colorgraphhi; temp$ones<-1
 aggregate.data.frame(temp$ones,by=list(temp$group2),sum)
 
+#interactions involving mesofauna
+temp<-colorgraphlo[which(colorgraphlo$group=="Mesofauna"),"otu"]
+temp2<-myedgelistlo[which(myedgelistlo$X1%in%temp|myedgelistlo$X2%in%temp),]
+dim(temp2)
+temp<-colorgraphme[which(colorgraphme$group=="Mesofauna"),"otu"]
+temp2<-myedgelistme[which(myedgelistme$X1%in%temp|myedgelistme$X2%in%temp),]
+dim(temp2)
+temp<-colorgraphhi[which(colorgraphhi$group=="Mesofauna"),"otu"]
+temp2<-myedgelisthi[which(myedgelisthi$X1%in%temp|myedgelisthi$X2%in%temp),]
+dim(temp2)
 
-
-
+#plants
+temp<-colorgraphlo[which(colorgraphlo$group=="Plant"),"otu"]
+temp2<-myedgelistlo[which(myedgelistlo$X1%in%temp|myedgelistlo$X2%in%temp),]
+dim(temp2)
+temp<-colorgraphme[which(colorgraphme$group=="Plant"),"otu"]
+temp2<-myedgelistme[which(myedgelistme$X1%in%temp|myedgelistme$X2%in%temp),]
+dim(temp2)
+temp<-colorgraphhi[which(colorgraphhi$group=="Plant"),"otu"]
+temp2<-myedgelisthi[which(myedgelisthi$X1%in%temp|myedgelisthi$X2%in%temp),]
+dim(temp2)
 
 
 

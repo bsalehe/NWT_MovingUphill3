@@ -463,24 +463,31 @@ datITSS3c<-datITSS2%>%
 
 #labelsEukS<-data.frame(rep("Eukaryota",dim(tax_table(datEukS3))[1]))
 
+#note - indented notes are from NWT_MovingUphill2
 #Amoebozoa (phylum)
 #Alveolata (Subkingdom, unranked clade, superphylum) - right now I'm not separating out Ps vs non-Ps b/c there are only 4 dinoflagallata and I can't tell whether they are Ps or not. there are a lot of things classified only to "Alveolata" so I can't tell what function they are.
   #photosynthetic Alveolata (kingdom) (phylum Dinoflagellata: mostly photosynthetic; nonphotosynthetic Protoperidinium, both SL163A10 and Pfiesteria (can if it eats an alga), unknown D244),) only 4 taxa, not sure if they are Ps but I'll leave them here. 
   #nonphotosynthetic Alveolata (phyla Ciliophora(predators), protalveolata, apicomplexa (parasites)), BOLA553 is a near apicomplexan, not sure what SCM37C52 is so I put it here
-#Archaeplastida (major_clade), combine the kingdoms Chloroplastida, Rhodophyceae, Haptophyta, 
-#Rhizaria (kingdom: unicellular amoeboid euks), 
-#Holozoa(kingdom: all animals, not fungi), includes metazoa (animals)
+#Archaeplastida (major_clade), combine the kingdoms Chloroplastida, Rhodophyceae, 
+#Rhizaria (subkingdom, unrankd clade, superphylum): unicellular amoeboid euks)
+#Holozoa(unranked: all animals, not fungi), includes metazoa (animals)
 #photosynthetic Excavata major clade (was Discoba kingdom) (class Euglenida: mostly photosynthetic), 
 #nonphotosnthetic Excavata (was Discoba) (in discoba, phylum Heterolobosea: parasites, free living, symbiotic, amoeba-like, and phylum Jakoba heterotrophic), superphylum metamonada, doesn't have kingdom, parasites not Ps. Kinetoplastea: not Ps, Tetramitia: most likely not Ps
 #we dont have any cryptophyceae
   #photosynthetic Cryptophyceae is a kingdom, they have one or two chloroplasts, except for Chilomonas, which has leucoplasts (not pigmented not for Ps) and Goniomonas (formerly Cyathomonas) which lacks plastids entirely.P1-31 (i can't find much info on this, some sites called them picoplankton and most of the cryptophyceae are photosynthetic). Cryptomonadales can't find much about it but assume Ps. __SA1-3C06 is at rank2 but notes in silva say "cryptophyte"
   #nonphotosynthetic cryptophyceae - Chilomonas and Goniomonas (formerly Cyathomonas)
-#Haptophyta kingdom, I think all are Ps
-#Centrohelida class - encyclopedia of life said some species have photosynthetic symbionts but I can't find any info on Ps taxa. I don't have many only like 8 taxa so I will leave them as centrohelida and assume they are nonPs. from before: Heterophryidae, Mb-5C (can't find any info on, I'll put it with nonPs), M1-18D08(can't find info),Acanthocystidae(can't find info),Pterocystis(can't find info), so I will leave them all in a group called "centrohelida"
+#Haptophyta phylum, I think all are Ps
+#Centrohelida order - encyclopedia of life said some species have photosynthetic symbionts but I can't find any info on Ps taxa. I don't have many only like 8 taxa so I will leave them as centrohelida and assume they are nonPs. from before: Heterophryidae, Mb-5C (can't find any info on, I'll put it with nonPs), M1-18D08(can't find info),Acanthocystidae(can't find info),Pterocystis(can't find info), so I will leave them all in a group called "centrohelida"
 #Kathablepharidae class - nonPs
-#NonPs Stramenopiles: MAST-12, Labyrinthulomycetes,Bicosoecida,Peronosporomycetes,Hyphochytriales
+#NonPs Stramenopiles (no rank, phylum): MAST-12, Labyrinthulomycetes,Bicosoecida,Peronosporomycetes,Hyphochytriales
 #Ps Stramenopiles: Diatomea, Eustigmatales, Xanthophyceae, Chrysophyceae, Raphidophyceae
-#heterotrophic eukaryota (things without a kingdom):Telonema (nonPs protist genus);Breviatea (amoeba like);Apusomonadidae sister to the breviatea nonPs
+
+#I second guessed myself and started to separate out the telonema, breviatea and Apusomonadidae, but thn I realized that the main contributer to "heterotrophic eukaryota" was unkonwn opithokonts, so I changed it back. The Apusomonadidae is kind of abundant, so i could try adding this catgory to see if it would pop out in the bargraph.  
+#### or I can change back since the most abundant "heterotrophic eukaryota is unknown opisthokonta. this is the huge group that includes holozoa, animals, fungi, and single celled euks like choanoflagellates. thus I shouldn't put this on a bargraph since it is too broad and unkown but I can still use it in networks
+#Telonema - a genus sometimes assigned to a unique phylum or class, nonps protist phylum
+#Breviatea class (amoeba like)
+#Apusomonadidae (sister to breviatea, nonPs, in a phylum Apusozoa)
+#heterotrophic eukaryota (things without a kingdom):Telonema (nonPs protist phylum);Breviatea ;Apusomonadidae sister to the breviatea nonPs
 
 unique(tax_table(datEukS3)[,"Rank2"])
 unique(tax_table(datEukS3)[,"Rank3"])
@@ -489,22 +496,76 @@ labelsEukS<-tax_table(datEukS3)[,"Rank3"]#
 
 ind<-which(tax_table(datEukS3)[,"Rank2"]=="__Amoebozoa")
 labelsEukS[ind]<-"Amoebozoa"
-ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Alveolata")
-labelsEukS[ind]<-"Alveolata"
+
+#splitting the Alveolata into phyla
+
+#ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Alveolata")
+#labelsEukS[ind]<-"Alveolata"
+
+#making dinoflagellates Ps Alveolata (from NWT_MovingUphill2)
 #ind<-which(tax_table(datEukS3)[,"Rank4"]=="__Dinoflagellata")#
 #labelsEukS[ind]<-"Photosynthetic_Alveolata"
 #ind<-which(tax_table(datEukS3)[,"Rank4"]!="__Dinoflagellata"&tax_table(datEukS3)[,"Rank3"]=="__Alveolata")
 #labelsEukS[ind]<-"Nonphotosynthetic_Alveolata"
-ind<-which(tax_table(datEukS3)[,"Rank2"]=="__Archaeplastida")
-labelsEukS[ind]<-"Archaeplastida"
-ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Rhizaria")
-labelsEukS[ind]<-"Rhizaria"
-ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Holozoa")
-labelsEukS[ind]<-"Holozoa"
-ind<-which(tax_table(datEukS3)[,"Rank6"]=="__Euglenida")
-labelsEukS[ind]<-"Photosynthetic_Excavata"
-ind<-which(tax_table(datEukS3)[,"Rank6"]!="__Euglenida"&tax_table(datEukS3)[,"Rank2"]=="__Excavata")
-labelsEukS[ind]<-"Nonphotosynthetic_Excavata"
+
+ind<-which(tax_table(datEukS3)[,"Rank4"]=="__Dinoflagellata");ind
+labelsEukS[ind]<-"Dinoflagellata"
+ind<-which(tax_table(datEukS3)[,"Rank4"]=="__Apicomplexa");ind
+labelsEukS[ind]<-"Apicomplexa"
+ind<-which(tax_table(datEukS3)[,"Rank4"]=="__Protalveolata");ind
+labelsEukS[ind]<-"Protalveolata"
+ind<-which(tax_table(datEukS3)[,"Rank4"]=="__Ciliophora");ind
+labelsEukS[ind]<-"Ciliophora"
+ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Alveolata"&is.na(tax_table(datEukS3)[,"Rank4"])==T);ind#I'm assuming these are heterotrophic since we don't ahve any confirmed photosynthetic taxa in the dataset
+labelsEukS[ind]<-"Heterotrophic_Unknown_Alveolata"
+
+#splitting the Archaeplastida into phyla
+#ind<-which(tax_table(datEukS3)[,"Rank2"]=="__Archaeplastida")
+#labelsEukS[ind]<-"Archaeplastida"
+
+ind<-which(tax_table(datEukS3)[,"Rank4"]=="__Chlorophyta");ind
+labelsEukS[ind]<-"Chlorophyta"
+ind<-which(tax_table(datEukS3)[,"Rank4"]=="__Charophyta");ind
+labelsEukS[ind]<-"Charophyta"
+ind<-which(tax_table(datEukS3)[,"Rank2"]=="__Archaeplastida"&is.na(tax_table(datEukS3)[,"Rank3"])==T);ind
+labelsEukS[ind]<-"Photosynthetic_Unknown_Archaeplastida"
+ind<-which(tax_table(datEukS3)[,"Rank2"]=="__Archaeplastida"&is.na(tax_table(datEukS3)[,"Rank4"])==T);ind
+labelsEukS[ind]<-"Photosynthetic_Unknown_Archaeplastida"
+
+#splitting the Rhizaria into phyla
+#ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Rhizaria");ind
+#labelsEukS[ind]<-"Rhizaria"
+ind<-which(tax_table(datEukS3)[,"Rank4"]=="__Cercozoa");ind
+labelsEukS[ind]<-"Cercozoa"
+ind<-which(tax_table(datEukS3)[,"Rank4"]=="__Foraminifera");ind
+labelsEukS[ind]<-"Foraminifera"
+
+#splitting the holozoa 
+#ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Holozoa");ind
+#labelsEukS[ind]<-"Holozoa"
+
+ind<-which(tax_table(datEukS3)[,"Rank4"]=="__Choanomonada");ind
+labelsEukS[ind]<-"Choanomonada"
+ind<-which(tax_table(datEukS3)[,"Rank4"]=="__Ichthyosporea");ind
+labelsEukS[ind]<-"Ichthyosporea"
+ind<-which(tax_table(datEukS3)[,"Rank4"]=="__Filasterea");ind
+labelsEukS[ind]<-"Filasterea"
+ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Holozoa"&is.na(tax_table(datEukS3)[,"Rank4"])==T);ind
+labelsEukS[ind]<-"Heterotrophic_Unknown_Holozoa"
+
+#splitting the Excavata
+#ind<-which(tax_table(datEukS3)[,"Rank6"]=="__Euglenida")
+#labelsEukS[ind]<-"Photosynthetic_Excavata"
+#ind<-which(tax_table(datEukS3)[,"Rank6"]!="__Euglenida"&tax_table(datEukS3)[,"Rank2"]=="__Excavata")
+#labelsEukS[ind]<-"Nonphotosynthetic_Excavata"
+
+ind<-which(tax_table(datEukS3)[,"Rank6"]=="__Euglenida");ind
+labelsEukS[ind]<-"Photosynthetic_Euglenozoa"
+ind<-which(tax_table(datEukS3)[,"Rank6"]!="__Euglenida"&tax_table(datEukS3)[,"Rank5"]=="__Euglenozoa");ind
+labelsEukS[ind]<-"Heterotrophic_Euglenozoa"
+ind<-which(tax_table(datEukS3)[,"Rank5"]=="__Heterolobosea");ind
+labelsEukS[ind]<-"Heterolobosea"
+
 ind<-which(tax_table(datEukS3)[,"Rank2"]=="__Haptophyta")
 labelsEukS[ind]<-"Haptophyta"
 ind<-which(tax_table(datEukS3)[,"Rank2"]=="__Centrohelida")
@@ -515,18 +576,27 @@ ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Stramenopiles"&tax_table(datEukS3)[
 labelsEukS[ind]<-"Nonphotosynthetic_Stramenopiles"
 ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Stramenopiles"&tax_table(datEukS3)[,"Rank4"]%in%c("__Diatomea","__Eustigmatales","__Xanthophyceae","__Chrysophyceae","__Raphidophyceae"))
 labelsEukS[ind]<-"Photosynthetic_Stramenopiles"
-ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Stramenopiles"&is.na(tax_table(datEukS3)[,"Rank4"])==T)
+ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Stramenopiles"&is.na(tax_table(datEukS3)[,"Rank4"])==T);ind
 labelsEukS[ind]<-"Unknown_Stramenopiles"
-ind<-which(tax_table(datEukS3)[,"Rank2"]=="__SAR"&is.na(tax_table(datEukS3)[,"Rank3"])==T)
+
+ind<-which(tax_table(datEukS3)[,"Rank2"]=="__SAR"&is.na(tax_table(datEukS3)[,"Rank3"])==T);ind
 labelsEukS[ind]<-"Unknown_Eukaryota"
 ind<-which(is.na(tax_table(datEukS3)[,"Rank2"])==T)
 labelsEukS[ind]<-"Unknown_Eukaryota"
-ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Breviatea"|tax_table(datEukS3)[,"Rank3"]=="__Telonema"|tax_table(datEukS3)[,"Rank3"]=="__Apusomonadidae")
-labelsEukS[ind]<-"Heterotrophic_Eukarya"
-ind<-which(tax_table(datEukS3)[,"Rank2"]=="__Opisthokonta"&is.na(tax_table(datEukS3)[,"Rank3"])==T)
-labelsEukS[ind]<-"Heterotrophic_Eukarya"
 
-#unique(tax_table(datEukS3)[which(tax_table(datEukS3)[,"Rank3"]=="__Discoba"),"Rank2"])
+#Breaking up the Breviatea, Telomena, Apusomonadidae
+#ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Breviatea"|tax_table(datEukS3)[,"Rank3"]=="__Telonema"|tax_table(datEukS3)[,"Rank3"]=="__Apusomonadidae")
+#labelsEukS[ind]<-"Heterotrophic_Eukarya"
+ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Breviatea")
+labelsEukS[ind]<-"Breviatea"
+ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Telonema")
+labelsEukS[ind]<-"Telonema"
+ind<-which(tax_table(datEukS3)[,"Rank3"]=="__Apusomonadidae")
+labelsEukS[ind]<-"Apusomonadidae"
+ind<-which(tax_table(datEukS3)[,"Rank2"]=="__Opisthokonta"&is.na(tax_table(datEukS3)[,"Rank3"])==T);ind
+labelsEukS[ind]<-"Heterotrophic_Unknown_Opisthokonta"
+
+unique(tax_table(datEukS3)[which(tax_table(datEukS3)[,"Rank2"]=="__Archaeplastida"),])
 #tax_table(datEukS3)[which(tax_table(datEukS3)[,"Rank3"]=="__Apusomonadidae"),]
 #ind<-which(is.na(labelsEukS)==T)
 #tax_table(datEukS3)[ind,]
@@ -541,7 +611,7 @@ unique(labelsEukS2$labels)
 labelsEukS2$group<-"Eukaryota"
 
 labelsEukS2$group2<-NA
-ind<-which(labelsEukS2$labels=="Archaeplastida"|labelsEukS2$labels=="Photosynthetic_Stramenopiles"|labelsEukS2$labels=="Haptophyta"|labelsEukS2$labels=="Photosynthetic_Excavata")
+ind<-which(labelsEukS2$labels=="Photosynthetic_Unknown_Archaeplastida"|labelsEukS2$labels=="Photosynthetic_Stramenopiles"|labelsEukS2$labels=="Haptophyta"|labelsEukS2$labels=="Photosynthetic_Euglenozoa")
 labelsEukS2$group2[ind]<-"PhotosyntheticEukaryota"
 ind<-which(labelsEukS2$labels=="Unknown_Eukaryota"|labelsEukS2$labels=="Unknown_Stramenopiles")
 labelsEukS2$group2[ind]<-"UnknownEukaryota"
@@ -558,6 +628,8 @@ unique(tax_table(datEukS3)[,11])
 labelsEukS2$taxstring<-paste(tax_table(datEukS3)[,1],tax_table(datEukS3)[,2],tax_table(datEukS3)[,3],tax_table(datEukS3)[,4],tax_table(datEukS3)[,5],tax_table(datEukS3)[,6],tax_table(datEukS3)[,7],tax_table(datEukS3)[,8],tax_table(datEukS3)[,9],tax_table(datEukS3)[,10],tax_table(datEukS3)[,11],sep=";")
 
 #replace tax table
+dim(tax_table(datEukS3))
+#tax_table(datEukS3)<-tax_table(datEukS3)[,-14] #run if replacing the label column
 tax_table(datEukS3)<-cbind(tax_table(datEukS3),labelsEukS)
 
 #look at tree of abundant taxa
@@ -896,6 +968,7 @@ labelsEukN2$otu<-sub("^", "N",rownames(labelsEukN2))
 labelsBac2$otu<-sub("^", "B",rownames(labelsBac2))
 labelsITS2$otu<-sub("^", "I",rownames(labelsITS2))
 
+#I did not re-run this after I changed the label file for the euks (splitting up major clades). Just on the off chance that I messed somthing up, I wanted to use the prior labelfile for the networks as I always have. I don't need the new Phylum categories for anything. I just use the kingdom otu file for the bargraphs
 labelfile1<-rbind(labelsEukS2,labelsEukN2,labelsBac2,labelsITS2)
 head(labelfile1)
 labelfile1$oldotu<-rownames(labelfile1)
