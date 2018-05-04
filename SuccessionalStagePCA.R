@@ -127,3 +127,122 @@ biogeo6noneg<-biogeo6%>%
 #putting zero for all negatives from above (not pca1)
 #highest variation in late: moisture, snowdepth, TC, TN, WHC, NO3
 #highest in lo/me: pH, plant dens, plant div, plant cov,MicC, MicN, NH4 
+
+
+
+
+###### Functional redundancy ######
+
+comm.bio
+
+#hmscY<-comm.bio[,54:7315] #for count data
+frsp<-comm.bio[,1287:6139] #for count data, only bacteria
+
+rownames(frsp)<-comm.bio$X.SampleID
+frsp[1:10,1:10]
+
+frenzymes<-comm.bio[,c(8:14,53)]
+rownames(frenzymes)<-comm.bio$X.SampleID
+
+#select lo/me/hi
+ind<-which(frenzymes$lomehi=="hi")
+frenzymesb<-frenzymes[ind,]
+frspb<-frsp[ind,]
+
+#select species with greater than X (X+1 or more) occurrences and remove lo me hi
+ind<-which(colSums(frspb>0)>8)
+length(ind)
+frspc<-frspb[,ind]
+frenzymesc<-frenzymesb[,1:dim(frenzymesb)[2]-1]#
+dim(frspc)
+dim(frenzymesc)
+
+#remove NA plots (only for ordination)
+#ind<-which(is.na(rowSums(frenzymesc))==F)
+#frspd<-frspc[ind,]
+#frenzymesd<-frenzymesc[ind,]
+
+frenzymese<-scale(frenzymesc)
+
+#myrda<-rda(frspd,frenzymese,scale=T,na.action=na.omit)
+#plot(myrda,scaling=1)
+#summary(myrda)
+
+#fr<-cbind(frenzymese,frspd)
+
+numspe<-dim(frspc)[2]
+
+frout<-data.frame(enzyme=rep(colnames(frenzymesc),each=numspe),spearmanrho=rep(NA,7*dim(frspc)[2]),spearmanp.value=rep(NA,7*dim(frspc)[2]))
+
+for (e in 1:7){
+  for (i in 1:numspe){
+    test<-cor.test(frenzymese[,e],frspc[,i],method="spearman",na.action=na.rm)
+    frout[i+((e-1)*numspe),2]<-test$estimate
+    frout[i+((e-1)*numspe),3]<-test$p.value
+  }
+}
+
+for (e in 1:7){
+  for (i in 1:numspe){
+    test<-spearman_test(frenzymese[,e]~frspc[,i],distribution=approximate(B=9999))
+    #spearman_test(frspc[,i]~frenzymese[,e],distribution="asymptotic",ties.method="mid-ranks")#this doesn't give the same asymptotic result as cor.test which is odd, but it is clos
+    #frout[i+((e-1)*numspe),2]<-test$estimate #it does not seem to calculate rho
+    test2<-cor.test(frenzymese[,e],frspc[,i],method="spearman",na.action=na.rm)
+    frout[i+((e-1)*numspe),2]<-test2$estimate
+    frout[i+((e-1)*numspe),3]<-pvalue(test)
+  }
+}
+
+lofrout<-frout
+lofrout$lomehi<-"lo"
+head(lofrout)
+lofrout$qval<-p.adjust(lofrout$spearmanp.value,method="fdr")
+which(lofrout$spearmanp.value<0.05)
+which(lofrout$qval<0.05)
+hist(lofrout$qval)
+min(lofrout$spearmanp.value)
+
+mefrout<-frout
+mefrout$lomehi<-"me"
+mefrout$qval<-p.adjust(mefrout$spearmanp.value,method="fdr")
+
+hifrout<-frout
+hifrout$lomehi<-"hi"
+hifrout$qval<-p.adjust(hifrout$spearmanp.value,method="fdr")
+which(hifrout$spearmanp.value<0.05)
+which(hifrout$qval<0.05)
+min(hifrout$spearmanp.value)
+24, 23, 71 = 118
+
+frout2<-rbind(lofrout,mefrout,hifrout)
+frout2$qvalall<-p.adjust(frout2$spearmanp.value,method="fdr")
+head(frout2)
+min(frout2$qvalall)
+
+plot(frenzymese[,1],frspc[,6])
+
+frout3<-frout2%>%
+  filter(spearmanrho>0)%>%
+  mutate(qvalpos=p.adjust(spearmanp.value,method="fdr"))%>%
+  group_by(enzyme, lomehi)%>%
+  filter(spearmanp.value<0.05)%>%
+  summarise(number=n())
+
+frout3[20,]<-c("LAP","lo",0)
+frout3[21,]<-c("PHOS","lo",0)
+frout3$number<-as.numeric(frout3$number)
+
+frout4<-frout3%>%
+  group_by(lomehi)%>%
+  summarise(mean=mean(number),se=std.error(number))
+
+ggplot(frout4,aes(x=lomehi,y=mean,group=lomehi,color=lomehi))+
+  labs(x = "",y="Relative abundance")+
+  theme_classic()+
+  theme(line=element_line(size=.3),text=element_text(size=10),strip.background = element_rect(colour="white", fill="white"),axis.line=element_line(color="gray30",size=.3),legend.key.size = unit(.6, "line"))+
+  geom_line(stat = "identity", position = "identity",size=.5)+
+  geom_point(size=2)+
+  geom_errorbar(aes(ymax = mean+se, ymin=mean-se),width=.15,size=.5)+
+  guides(col = guide_legend(ncol = 1))
+
+t.test(frout3$number[frout3$lomehi=="lo"],frout3$number[frout3$lomehi=="hi"],paired=T)

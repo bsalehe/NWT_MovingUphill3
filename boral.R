@@ -75,13 +75,13 @@ comm.bio[1:10,1:60]
 dim(comm.bio)
 
 hmscY<-comm.bio[,54:7315] #for count data
-#hmscY<-comm.bio[,54:5895] #for relabundance data
+#hmscY<-comm.bio[,54:5895] #for relabundance data #I think this was from the old bioinformatics (clustering at 97% (?), otherwise the dimensions should not be different for count or rel abun data)
 #hmscY<-comm.bio[,54:300] #for practice
 
 rownames(hmscY)<-comm.bio$X.SampleID
 hmscY[1:10,1:10]
 
-#the intercept is a holdover from using the HMSC package, I will leave it in for how incase I ever want to go back to that
+#the intercept is a holdover from using the HMSC package, I will leave it in for now in case I ever want to go back to that
 hmscX<-data.frame(inter=rep(1,75),snowdepth=comm.bio$snowdepth,TC=comm.bio$TC,pH=comm.bio$pH,moisture=comm.bio$moisture,lomehi=comm.bio$lomehi) #,plantcov=comm.bio$plantcov  ,whc=comm.bio$WHC
 rownames(hmscX)<-comm.bio$X.SampleID
 
@@ -378,10 +378,10 @@ colMatlo<-rescor.lolv4occ9exp4nosite$sig.correlaton
 colMatlo[which(rescor.lolv4occ9exp4nosite$sig.correlaton>0)]<-1
 colMatlo[which(rescor.lolv4occ9exp4nosite$sig.correlaton<0)]<- -1
 
-#colMatlo<-rescor.lolv4occ9exp4f$sig.correlaton
-#colMatlo[which(colMatlo>.6)]<-1
-#colMatlo[which(colMatlo<(-.6))]<- -1
-#colMatlo[which(colMatlo<.6&colMatlo>(-.6))]<-0
+colMatlo<-rescor.lolv4occ9exp4nosite$sig.correlaton
+colMatlo[which(colMatlo>.85)]<-1
+colMatlo[which(colMatlo<(-.85))]<- -1
+colMatlo[which(colMatlo<.85&colMatlo>(-.85))]<-0
 
 temp<-colMatlo[upper.tri(colMatlo)]
 temp2<-temp[temp!=0]
@@ -410,7 +410,7 @@ graphlo2$layout <- layout_in_circle(graphlo2,order=orderlo)
 #graphlo2$layout <- layout_in_circle
 
 #pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networklocircle.pdf") 
-plot(graphlo2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistlo$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphlo$color,edge.width=.7)#,vertex.shape=shapesgraplo
+plot(graphlo2,vertex.size=4,edge.curved=F,edge.color=ifelse(myedgelistlo$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphlo$color,edge.width=.7,vertex.label=NA)#,vertex.shape=shapesgraplo  
 #dev.off()
 
 colorgraphlo[which(colorgraphlo$group=="Mesofauna"),]
@@ -421,6 +421,23 @@ myedgelistlo[which(myedgelistlo$X1=="B783ef4ce2388b995de6b9b27b0c9209e"|myedgeli
 temp<-colorgraphlo[which(colorgraphlo$group=="Mesofauna"),"otu"]
 temp2<-myedgelistlo[which(myedgelistlo$X1%in%temp|myedgelistlo$X2%in%temp),]
 dim(temp2)
+
+#making sure it is plotting in the right order, yes. the nematode negative interactions are just covered up by all the red positive interactions in the main graph
+dim(colMatlo)
+rownames(colMatlo)<-1:644
+colnames(colMatlo)<-1:644
+graphlo1<-graph_from_adjacency_matrix(colMatlo, mode = c( "undirected"), weighted = T, diag = F,add.colnames = NULL, add.rownames = NULL)
+orderlo<-c(7,8,18,19,20,21,9,6,15,16,17,14,5,4,3,1,2,10,11,12,13)
+colorgraphlo<-data.frame(color=as.character(c("#ff9c34",rep("gray80",20))));colorgraphlo$color<-as.character(colorgraphlo$color)
+
+#subgraph lo
+colorgraphlo2<-colorgraphlo[which(colorgraphlo$group2=="Mesofauna"),]
+myedgelistlo2<-myedgelistlo[which(myedgelistlo[,"X1"]%in%colorgraphlo2$otu|myedgelistlo[,"X2"]%in%colorgraphlo2$otu),]
+graph3<-subgraph.edges(graphlo2, eids=which(myedgelistlo2[,"X1"]%in%colorgraphlo2$otu|myedgelistlo2[,"X2"]%in%colorgraphlo2$otu), delete.vertices = F)
+plot(graph3,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistlo2$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphlo$color)#,rescale=F,xlim=c(-1,1),ylim=c(-1,1)
+
+
+
 
 
 ##### me #####
@@ -521,10 +538,8 @@ plot(graph3,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedge
 
 
 
-###### network statistics #######
-graph.density(graphlo2)
-graph.density(graphme2)
-graph.density(graphhi2)
+
+###### Network statistics #######
 
 length(E(graphlo2))/length(V(graphlo2))
 length(E(graphme2))/length(V(graphme2))
@@ -539,31 +554,140 @@ aggregate.data.frame(temp$ones,by=list(temp$group2),sum)
 temp<-colorgraphhi; temp$ones<-1
 aggregate.data.frame(temp$ones,by=list(temp$group2),sum)
 
+
 #interactions involving mesofauna
 temp<-colorgraphlo[which(colorgraphlo$group=="Mesofauna"),"otu"]
 temp2<-myedgelistlo[which(myedgelistlo$X1%in%temp|myedgelistlo$X2%in%temp),]
+temp2
 dim(temp2)
+colorgraphlo[which(colorgraphlo$group=="Mesofauna"),]
+colorgraphlo[which(colorgraphlo$otu%in%temp2$X1|colorgraphlo$otu%in%temp2$X2),]
+
 temp<-colorgraphme[which(colorgraphme$group=="Mesofauna"),"otu"]
 temp2<-myedgelistme[which(myedgelistme$X1%in%temp|myedgelistme$X2%in%temp),]
 dim(temp2)
+colorgraphme[which(colorgraphme$group=="Mesofauna"),]
+
 temp<-colorgraphhi[which(colorgraphhi$group=="Mesofauna"),"otu"]
 temp2<-myedgelisthi[which(myedgelisthi$X1%in%temp|myedgelisthi$X2%in%temp),]
 dim(temp2)
+colorgraphhi[which(colorgraphhi$group=="Mesofauna"),]
+
+
+#photosynthetic microbes
+temp<-colorgraphlo[which(colorgraphlo$group2=="PhotosyntheticBacteria"),"otu"]
+temp<-colorgraphlo[which(colorgraphlo$group2=="PhotosyntheticEukaryota"),"otu"]
+temp2<-myedgelistlo[which(myedgelistlo$X1%in%temp|myedgelistlo$X2%in%temp),]
+which(temp2$X1=="Ba6f5d1af8106e5c3abaf27735243cca4"|temp2$X2=="Ba6f5d1af8106e5c3abaf27735243cca4") #chlorobi (photoautotroph), 41 pos interactions with heterotrophic bacteria, 1 pos with algae, one pos photobac
+which(temp2$X1=="Bc3082be027f0efa400acd22097db7422"|temp2$X2=="Bc3082be027f0efa400acd22097db7422") #Cyanobacteria, 12 interaction with het bacteria, 1 pos with photosynthetic bacteria
+which(temp2$X1=="Bcbf23a259461788c7396423fe4fbf6de"|temp2$X2=="Bcbf23a259461788c7396423fe4fbf6de")#highest, chloroflexi (photoheterotroph), one pos photobac (didn't check for heterotrophs)
+which(temp2$X1=="Bc4030127655425fbcde4a26e69b4859d"|temp2$X2=="Bc4030127655425fbcde4a26e69b4859d")#highest, chloroflexi (photoheterotroph), one pos photobac, one pos photoeuk (didnt check heterotrophs)
+which(temp2$X1=="B3610973234fc5048dbab19dbef98d605"|temp2$X2=="B3610973234fc5048dbab19dbef98d605")#chloroflexi (photoheterotroph)
+S8fcb977d1395a10dc83007a741b8a620 - Charophyta neg with fungi and bacteria
+S0e23274231a1b7918be91d3630da6fe5 - Chlorophyta, 5 pos with hterotrophic bacteria, one pos with photosynthetic bactria
+Sd4ea6eb20ce02a8c3e292634f92b2f10 - Chlorophyta, 2 pos with heterotrophic bacteria
+Sdfc413b77592c93861526de8c906369c - chlorophyta, 2 positive with htertrophic bacteria
+Sd2b04c59e082351f65cc351ef7d4ab04 - Chlorophyta 27 with het bac, 1 pos with photeuk and 1 with photobac
+S6ae4196b4456d15855bbb3b088b90e1c - Archaeplastida, 12 with het bac, 1 pos with photeuk
+S162acde9cd2e077ccdde140382ea48cd - Chlorophyta 2 with hetbac
+Se84d5f50cb74d66781cd7b44849cccdd - chlorophyta, 14 with het back
+S87c0732ac6500f25336817c21ffc153e- chlorophyta 2 with het bac
+Sa4906785d79edc355bd7c3048d0ed2a8 - chlorophyta 4 with het bac
+Sd329e25e43835c63a4b27ccaf2403721 - Stramenopiles/Diatomea 4 pos with het bac
+S9cfbc221cd3b50a2f192559d99142a13 - Stramenopiles/Diatomea 3 pos with het bac
+Sc45dd62d47c0618457b55cd98c0a28c1 - Stramenopiles;__Chrysophyceae 4 pos het bac
+S478bbfcf431d6dbd7438f33dc46a603e - chloroplastida (not to phylum), 1 with ht bac
+
+#2 pos b/t photobac, 2 pos b/t photobac and photo euk, 1 pos b/t photoeuk
+dim(temp2)
+temp2
+colorgraphlo[which(colorgraphlo$otu%in%temp2$X1|colorgraphlo$otu%in%temp2$X2),]
+colorgraphlo[which(colorgraphlo$otu=="Bc3082be027f0efa400acd22097db7422"),]
+temp3<-myedgelistlo[which(myedgelistlo$X1=="B3610973234fc5048dbab19dbef98d605"|myedgelistlo$X2=="B3610973234fc5048dbab19dbef98d605"),]
+names(temp3)[1]<-"otu"
+temp3<-merge(temp3,colorgraphlo[,c(1,2)])
+#temp3<-merge(temp3,colorgraphlo[,c(1,5)])
+names(temp3)[1]<-"X1"
+names(temp3)[2]<-"otu"
+names(temp3)[4]<-"taxstring1"
+temp3<-merge(temp3,colorgraphlo[,c(1,2)])
+#temp3<-merge(temp3,colorgraphlo[,c(1,5)])
+temp3
+length(which(temp3$weight==1&temp3$group2=="HeterotrophicBacteria"))
+
+#counting total interations, not knowing who the connection is with
+temp<-colorgraphlo[which(colorgraphlo$group2=="PhotosyntheticBacteria"|colorgraphlo$group2=="PhotosyntheticEukaryota"),"otu"]
+temp2<-myedgelistlo[which(myedgelistlo$X1%in%temp|myedgelistlo$X2%in%temp),]
+dim(temp2) #307 interactions
+
+temp<-colorgraphme[which(colorgraphme$group2=="PhotosyntheticBacteria"|colorgraphme$group2=="PhotosyntheticEukaryota"),"otu"]
+temp2<-myedgelistme[which(myedgelistme$X1%in%temp|myedgelistme$X2%in%temp),]
+temp2
+dim(temp2) #153 interactions
+colorgraphme[which(colorgraphme$otu%in%temp2$X1|colorgraphme$otu%in%temp2$X2),]
+
+temp<-colorgraphhi[which(colorgraphhi$group2=="PhotosyntheticBacteria"|colorgraphhi$group2=="PhotosyntheticEukaryota"),"otu"]
+temp2<-myedgelisthi[which(myedgelisthi$X1%in%temp|myedgelisthi$X2%in%temp),]
+dim(temp2) #10 interactions
+temp2
+colorgraphhi[which(colorgraphhi$otu%in%temp2$X1|colorgraphhi$otu%in%temp2$X2),]
+
+
 
 #plants
 temp<-colorgraphlo[which(colorgraphlo$group=="Plant"),"otu"]
 temp2<-myedgelistlo[which(myedgelistlo$X1%in%temp|myedgelistlo$X2%in%temp),]
 dim(temp2)
+
 temp<-colorgraphme[which(colorgraphme$group=="Plant"),"otu"]
 temp2<-myedgelistme[which(myedgelistme$X1%in%temp|myedgelistme$X2%in%temp),]
+temp2
 dim(temp2)
+colorgraphme[which(colorgraphme$otu%in%temp2$X1|colorgraphme$otu%in%temp2$X2),]
+
 temp<-colorgraphhi[which(colorgraphhi$group=="Plant"),"otu"]
 temp2<-myedgelisthi[which(myedgelisthi$X1%in%temp|myedgelisthi$X2%in%temp),]
 dim(temp2)
+temp2
+colorgraphhi[which(colorgraphhi$otu%in%temp2$X1|colorgraphhi$otu%in%temp2$X2),]
 
 
 
+#Bacteria in networks (lo abundance, hi)
+temp<-colorgraphlo[which(colorgraphlo$group=="Bacteria"),]
+ind<-grep("Ktedonobacteria",temp$taxstring)
+temp1<-temp[ind,]
+#temp<-colorgraphlo[which(colorgraphlo$group=="Bacteria"),"otu"]
+temp2<-myedgelistlo[which(myedgelistlo$X1%in%temp1$otu|myedgelistlo$X2%in%temp1$otu),]
+temp2
+sum(temp2$weight[temp2$weight==1])
+dim(temp2)
+colnames(temp2)[1]<-"otu"
+temp2<-merge(temp2,colorgraphlo[,c(1,2)])
+colnames(temp2)[4]<-"X1c"
+colnames(temp2)[1]<-"X1"
+colnames(temp2)[2]<-"otu"
+temp2<-merge(temp2,colorgraphlo[,c(1,2)])
+colnames(temp2)[5]<-"X2c"
+colnames(temp2)[1]<-"X2"
+head(temp2)
+ind<-which(temp2$X1c!="HeterotrophicBacteria")
+temp2$X2c[ind]<-temp2$X1c[ind]
+temp2$X1c[ind]<-"HeterotrophicBacteria"
+#now X2c is all the partner of the ktedonobacteria
+temp3<-temp2[which(temp2$weight==1),]
+aggregate.data.frame(temp3$weight,by=list(temp3$X2c),sum)
+#subtract 26 positive interactions are between two Ktedonobacteria
+dim(myedgelistlo[which(myedgelistlo$X1%in%temp1$otu&myedgelistlo$X2%in%temp1$otu),])
+245-26
 
+#high
+temp<-colorgraphhi[which(colorgraphhi$group=="Fungi"),]
+ind<-grep("Plenodomus_biglobosus",temp$taxstring)
+temp[ind,]
+Ide16ea0b9000538bf51c5d592e6003a0
+temp2<-myedgelisthi[which(myedgelisthi$X1%in%c("Ide16ea0b9000538bf51c5d592e6003a0")|myedgelisthi$X2%in%c("Ide16ea0b9000538bf51c5d592e6003a0")),]
+temp2
 
 
 
@@ -808,11 +932,11 @@ points(hmscXe[,3],m1fitted,col=2)
 #
 
 ###### Checking whether I should include a random plot effect #####
+#no, because a random plot effect standardizes the whole dataset
 
 
 
-
-##### funcions #####
+##### Functions #####
 #90% CI
 get.residual.cor2<-function (object, est = "median", prob = .9) 
 {
