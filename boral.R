@@ -22,6 +22,17 @@ comm.dataEukN<-datEukN3cotu3
 comm.dataBac<-datBacS3cotu3
 comm.dataITS<-datITSS3cotu3
 
+max(datEukS3otu3[,32:dim(datEukS3otu3)[2]])
+[1] 0.4006889
+max(datEukN3otu3[,32:dim(datEukN3otu3)[2]])
+[1] 1
+max(datBacS3otu3[,32:dim(datBacS3otu3)[2]])
+[1] 0.1005081
+max(datITSS3otu3[,32:dim(datITSS3otu3)[2]])
+[1] 0.3743274
+
+sort(matrix(as.matrix(datITSS3otu3[,32:dim(datITSS3otu3)[2]]),ncol=1),decreasing=T)
+
 #plants
 plantcomp2
 

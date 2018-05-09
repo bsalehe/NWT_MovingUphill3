@@ -85,6 +85,8 @@ head(biogeo6)
 cbind(biogeo6$plantcover,biogeo6$Plant_Dens,biogeo6$lomehi)
 #it is kind of strange that some of the plots with 0 plants were classified as medium, but there is not much I can do if that's how the pca shakes out. i'll just have to see what the networks look like
 
+#write file for Cliff to make a map of the plots
+write.csv(biogeo6,"/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networkmsplots.csv")
 
 
 ###### Looking at variation in env characteristics ######
