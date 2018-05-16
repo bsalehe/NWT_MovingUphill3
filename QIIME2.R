@@ -296,6 +296,13 @@ qiime feature-classifier fit-classifier-naive-bayes \
 --o-classifier all_EMB_gg_13_8_classifier.qza
 
 
+#the old greengenes database for PICRUSt
+qiime tools import \
+--type 'FeatureData[Sequence]' \
+--input-path gg_13_5_otus/rep_set/97_otus.fasta \
+--output-path gg_13_5_otus_97_otus.qza
+
+
 
 
 
@@ -1128,7 +1135,7 @@ qiime dada2 denoise-single \
 --p-trim-left 0 \
 --p-trunc-len 251 \
 
-#export rep seqs just to take a look at. especially to look at how the long sequences got identified, I don't think I can look at this, since there isn't a file that has the ID DNA header, the sequence, and the feature ID in it
+#export rep seqs just to take a look at. especially to look at how the long sequences got identified, I don't think I can look at this, since there isn't a file that has the ID DNA header, the sequence, and the feature ID in it. 46,673 rep sequences
 qiime tools export \
 rep-seqs.qza \
 --output-dir exported-rep-seqs
@@ -1232,6 +1239,214 @@ qiime taxa barplot \
 --o-visualization taxa-bar-plots_gg.qzv
 
 qiime tools view taxa-bar-plots_gg.qzv
+
+
+
+##### For use in PICRUSt #####
+#start 10:05 am, end 10:11am
+#99 percent similarity database, 99%similarity to match
+qiime vsearch cluster-features-closed-reference \
+--i-sequences rep-seqs.qza \
+--i-table table.qza \
+--i-reference-sequences gg_13_8_otus_99_otus.qza \
+--p-perc-identity .99 \
+--p-threads 0 \
+--output-dir closedRef_forPICRUSt_99db_99sim
+
+qiime vsearch cluster-features-closed-reference \
+--i-sequences rep-seqs.qza \
+--i-table table.qza \
+--i-reference-sequences gg_13_8_otus_99_otus.qza \
+--p-perc-identity .80 \
+--p-threads 0 \
+--output-dir closedRef_forPICRUSt_99db_80sim
+
+qiime vsearch cluster-features-closed-reference \
+--i-sequences rep-seqs.qza \
+--i-table table.qza \
+--i-reference-sequences gg_13_8_otus_99_otus.qza \
+--p-perc-identity .50 \
+--p-threads 0 \
+--output-dir closedRef_forPICRUSt_99db_50sim
+
+qiime vsearch cluster-features-closed-reference \
+--i-sequences rep-seqs.qza \
+--i-table table.qza \
+--i-reference-sequences gg_13_8_otus_99_otus.qza \
+--p-perc-identity .10 \
+--p-threads 0 \
+--output-dir closedRef_forPICRUSt_99db_10sim
+
+#view how many artifacts there are
+qiime feature-table summarize \
+--i-table clustered_table.qza \
+--o-visualization clustered_table \
+--m-sample-metadata-file 515BC_Niwot_20072015_All_MapFilenewlomehinoN472015.tsv
+qiime tools view clustered_table.qzv
+
+#export to biom file for PICRUSt
+qiime tools export \
+clustered_table.qza \
+--output-dir exported-feature-table
+
+#export umatched/matched sequences file to see if I can count sequences to get a percent
+qiime tools export \
+clustered_sequences.qza \
+--output-dir exported-clustered_sequences
+
+qiime tools export \
+unmatched_sequences.qza \
+--output-dir exported-unmatched_sequences
+
+#odd - the clustered sequences are a typical fasta file with one header line and one long sequence line (divide line count by 2 to get number of sequences from the rep set that were matched). the unmatched sequences file is fasta with on header line and the sequence line has line breaks so in my case the sequence line is 4 lines long (divide by 5). 
+#note - the clustered sequences are features, which means they are clustered at whatever similarity was chosen, they are NOT my original rep set sequences! So I cannot add together the number of sequences from the clustered and unmatched fasta files (this will differ across different % simlarity runs). The unmatched sequences are my original rep set sequences that are not matched. So what I have to do is get the total number of input sequnces from my original rep set file, then subtract the number of sequences in the unmatched file. to get a percent sequnces matched.
+46673 rep sequences
+35206 unmatched sequences at 99% in 99 database
+(46673-35206)/46673=24.6% matched
+
+#convert biom to otu table text file so I can delete Nematode and control samples - they were giving errors in picrust I think because they contain no matches to the database
+#update -  this didn't matter it just outputs 0 for those samples
+biom convert -i feature-table.biom -o otu_table.txt --to-tsv
+
+#Then open it and delete the samples you don't want (all of 2007 and all nematodes and controls). also delete samples 5, 34, 126 b/c they had no or few reads in them. 
+#Then delete all the otus that no longer are represented in the dataset
+#Then convert back to biom
+biom convert -i otu_table_reduced.txt -o otu_table_reduced.biom --to-hdf5 --table-type="OTU table"
+
+
+Go here for picrust, upload the biom file, specifying "biom" in the dropdown for file time (need to do this or it wont be recognized as biom)
+http://galaxy.morganlangille.com/tours/core.galaxy_ui
+
+#mapping files for KEGG https://groups.google.com/forum/#!msg/picrust-users/r8EE2NBAaC8/z9pxqdJdBgAJ
+
+
+
+### Using 97% similarity and old database
+#note, these files were overwritten by the files below b/c I wanted to filter the otu table first
+qiime vsearch cluster-features-closed-reference \
+--i-sequences rep-seqs.qza \
+--i-table table.qza \
+--i-reference-sequences gg_13_5_otus_97_otus.qza \
+--p-perc-identity .97 \
+--p-threads 0 \
+--output-dir closedRef_forPICRUSt_97db_97sim
+
+#view how many artifacts there are
+qiime feature-table summarize \
+--i-table clustered_table.qza \
+--o-visualization clustered_table \
+--m-sample-metadata-file 515BC_Niwot_20072015_All_MapFilenewlomehinoN472015.tsv
+qiime tools view clustered_table.qzv
+
+#export umatched/matched sequences file to see if I can count sequences to get a percent
+qiime tools export \
+unmatched_sequences.qza \
+--output-dir exported-unmatched_sequences
+
+46673 rep sequences
+23083 unmatched sequences at 97% in 97 database
+(46673-23083)/46673=50.5% matched
+#note, these files were overwritten by the files below
+
+
+# Using the 97% database but first filtering samples from otu table and repset and rarefying
+
+#get only samples with more than 8000 reads from soil 2015, this removes the three that hav super low samples in bacteria and also sample 56 which is the next lowst at 7000 but is removed down the line b/c there was no nematode data
+# this removes any features that become 0 abundance automatically, so you don't have to do another filtering after
+qiime feature-table filter-samples \
+--p-where "year='2015' AND SampleType='soil'" \
+--m-metadata-file 515BC_Niwot_20072015_All_MapFilenewlomehinoN472015.tsv \
+--p-min-frequency 8000 \
+--i-table table.qza \
+--o-filtered-table table_filtered1.qza
+
+qiime feature-table summarize \
+--i-table table_filtered1.qza \
+--o-visualization table_filtered1.qzv \
+--m-sample-metadata-file 515BC_Niwot_20072015_All_MapFilenewlomehinoN472015.tsv
+
+qiime tools view table_filtered1.qzv
+#  #features 25,628
+
+#filter out euks, mitochondria and chloroplast, this is slightly diffrent than my filtering in phyloseq b/c I specified class for chloroplast and family for microchondria
+qiime taxa filter-table \
+--i-table table_filtered1.qza \
+--i-taxonomy taxonomy_gg.qza \
+--p-include bacteria,archaea \
+--p-exclude mitochondria,chloroplast \
+--o-filtered-table table_filtered2.qza
+
+qiime feature-table summarize \
+--i-table table_filtered2.qza \
+--o-visualization table_filtered2.qzv \
+--m-sample-metadata-file 515BC_Niwot_20072015_All_MapFilenewlomehinoN472015.tsv
+
+qiime tools view table_filtered2.qzv
+#  #features 25,330
+
+#rarefy
+qiime feature-table rarefy \
+--i-table table_filtered2.qza \
+--p-sampling-depth 10825 \
+--o-rarefied-table table_filtered2_rarefied.qza
+
+qiime feature-table summarize \
+--i-table table_filtered2_rarefied.qza \
+--o-visualization table_filtered2_rarefied.qzv \
+--m-sample-metadata-file 515BC_Niwot_20072015_All_MapFilenewlomehinoN472015.tsv
+
+qiime tools view table_filtered2_rarefied.qzv
+# features 23,347
+
+
+#then filter the rep seqs
+qiime feature-table filter-seqs \
+--i-data rep-seqs.qza \
+--i-table table_filtered2_rarefied.qza \
+--o-filtered-data rep-seqs_filtered.qza
+
+qiime tools export \
+rep-seqs_filtered.qza \
+--output-dir exported-rep-seqs_filtered
+#yes this checks there are 23347 sequences
+
+#now do the closed reference clustering
+qiime vsearch cluster-features-closed-reference \
+--i-sequences rep-seqs_filtered.qza \
+--i-table table_filtered2_rarefied.qza \
+--i-reference-sequences gg_13_5_otus_97_otus.qza \
+--p-perc-identity .97 \
+--p-threads 0 \
+--output-dir closedRef_forPICRUSt_97db_97sim
+
+#view how many artifacts there are
+qiime feature-table summarize \
+--i-table clustered_table.qza \
+--o-visualization clustered_table \
+--m-sample-metadata-file 515BC_Niwot_20072015_All_MapFilenewlomehinoN472015.tsv
+qiime tools view clustered_table.qzv
+
+#export umatched/matched sequences file to see if I can count sequences to get a percent
+qiime tools export \
+unmatched_sequences.qza \
+--output-dir exported-unmatched_sequences
+#4631 features
+
+23347 rep sequences
+11264 unmatched sequences at 97% in 97 database
+(23347-11264)/23347=51.8% matched
+
+#to PICRUSt
+qiime tools export \
+clustered_table.qza \
+--output-dir exported-feature-table
+
+biom convert -i Galaxy24-\[Categorize_by_Function_on_data_21\].biom -o otu_table24.txt --to-tsv
+
+
+
+
+
 
 
 
