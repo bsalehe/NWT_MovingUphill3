@@ -420,8 +420,9 @@ orderlo<-order(colorgraphlo$group2)
 graphlo2$layout <- layout_in_circle(graphlo2,order=orderlo)
 #graphlo2$layout <- layout_in_circle
 
-#pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networklocircle.pdf") 
+#pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networklocircleposblue.pdf") 
 plot(graphlo2,vertex.size=4,edge.curved=F,edge.color=ifelse(myedgelistlo$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphlo$color,edge.width=.7,vertex.label=NA)#,vertex.shape=shapesgraplo  
+plot(graphlo2,vertex.size=4,edge.curved=F,edge.color=ifelse(myedgelistlo$weight==1,"#687dcb","#ce4d42"),vertex.color=colorgraphlo$color,edge.width=.7,vertex.label=NA)#,vertex.shape=shapesgraplo  
 #dev.off()
 
 colorgraphlo[which(colorgraphlo$group=="Mesofauna"),]
@@ -485,8 +486,9 @@ orderme<-order(colorgraphme$group2)
 graphme2$layout <- layout_in_circle(graphme2,order=orderme)
 #graphme2$layout <- layout_in_circle
 
-pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networkmecircle.pdf") 
+pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networkmecircleposblue.pdf") 
 plot(graphme2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistme$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphme$color,edge.width=.7)#,layout=l3
+plot(graphme2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelistme$weight==1,"#687dcb","#ce4d42"),vertex.color=colorgraphme$color,edge.width=.7)#,layout=l3
 dev.off()
 
 temp<-colorgraphme[which(colorgraphme$group=="Mesofauna"),"otu"]
@@ -531,8 +533,9 @@ orderhi<-order(colorgraphhi$group2)
 graphhi2$layout <- layout_in_circle(graphhi2,order=orderhi)
 #graphhi2$layout <- layout_in_circle
 
-#pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networkhicircle.pdf") 
+#pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/networkhicircleposblue.pdf") 
 plot(graphhi2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelisthi$weight==1,"#ce4d42","#687dcb"),vertex.color=colorgraphhi$color,edge.width=.7)#,layout=l3  
+plot(graphhi2,vertex.size=4,edge.curved=F,vertex.label=NA,edge.color=ifelse(myedgelisthi$weight==1,"#687dcb","#ce4d42"),vertex.color=colorgraphhi$color,edge.width=.7)#,layout=l3  
 #dev.off()
 
 colorgraphhi[which(colorgraphhi$group=="Mesofauna"),]
@@ -574,6 +577,14 @@ dim(temp2)
 colorgraphlo[which(colorgraphlo$group=="Mesofauna"),]
 colorgraphlo[which(colorgraphlo$otu%in%temp2$X1|colorgraphlo$otu%in%temp2$X2),]
 
+temp<-colorgraphlo[which(colorgraphlo$otu=="Nb85db42310af5ddb08354eef2427cc8e"),"otu"]
+temp2<-myedgelistlo[which(myedgelistlo$X1%in%temp|myedgelistlo$X2%in%temp),]
+colorgraphlo[which(colorgraphlo$otu%in%temp2$X2),]
+
+Nb85db42310af5ddb08354eef2427cc8e predator nematode
+N91502b60bb4cd795ba70dd05ed89e805 rotifer, one neg relationship with bacteroidetes
+Nf607691c8f991641954b20294b81a9b7 rotifer, 3 neg relationship with heterotrophic bacteria, 1 neg with fungi
+
 temp<-colorgraphme[which(colorgraphme$group=="Mesofauna"),"otu"]
 temp2<-myedgelistme[which(myedgelistme$X1%in%temp|myedgelistme$X2%in%temp),]
 dim(temp2)
@@ -584,37 +595,54 @@ temp2<-myedgelisthi[which(myedgelisthi$X1%in%temp|myedgelisthi$X2%in%temp),]
 dim(temp2)
 colorgraphhi[which(colorgraphhi$group=="Mesofauna"),]
 
+temp<-colorgraphhi[which(colorgraphhi$otu=="N6f914ead2160e51670d3dc70c25e107b"),"otu"]
+temp2<-myedgelisthi[which(myedgelisthi$X1%in%temp|myedgelisthi$X2%in%temp),]
+colorgraphhi[which(colorgraphhi$otu%in%temp2$X2),]
+
+N6f914ead2160e51670d3dc70c25e107b not well identified probably fungal feeder, Aphelenchoides fragariae, also positively correlated with 4 fungi
+Nece270a38485359f4d1e2a33f964a983 Nagelus obscurus, plant parasite
+     Leptosphaeria is the fungus it is positively correlated with, which is a plant pathogen
+N1b65f0ff041f3f5b37e4dcb6607ea61b Pungentus sp, omnivore, positively correlated with two bacteria
+
+
+#get sequences for all the mesofauna so Dorota can check them
+grep -C 2 "bfe4b462f2c88679387207f098ee6220" dna-sequences.fasta
+
 
 #photosynthetic microbes
 temp<-colorgraphlo[which(colorgraphlo$group2=="PhotosyntheticBacteria"),"otu"]
 temp<-colorgraphlo[which(colorgraphlo$group2=="PhotosyntheticEukaryota"),"otu"]
 temp2<-myedgelistlo[which(myedgelistlo$X1%in%temp|myedgelistlo$X2%in%temp),]
-which(temp2$X1=="Ba6f5d1af8106e5c3abaf27735243cca4"|temp2$X2=="Ba6f5d1af8106e5c3abaf27735243cca4") #chlorobi (photoautotroph), 41 pos interactions with heterotrophic bacteria, 1 pos with algae, one pos photobac
+which(temp2$X1=="Ba6f5d1af8106e5c3abaf27735243cca4"|temp2$X2=="Ba6f5d1af8106e5c3abaf27735243cca4") #chlorobi (photoautotroph), 37 pos interactions with heterotrophic bacteria, 4 with unknown bacteria, 1 pos with algae, one pos photobac
 which(temp2$X1=="Bc3082be027f0efa400acd22097db7422"|temp2$X2=="Bc3082be027f0efa400acd22097db7422") #Cyanobacteria, 12 interaction with het bacteria, 1 pos with photosynthetic bacteria
 which(temp2$X1=="Bcbf23a259461788c7396423fe4fbf6de"|temp2$X2=="Bcbf23a259461788c7396423fe4fbf6de")#highest, chloroflexi (photoheterotroph), one pos photobac (didn't check for heterotrophs)
 which(temp2$X1=="Bc4030127655425fbcde4a26e69b4859d"|temp2$X2=="Bc4030127655425fbcde4a26e69b4859d")#highest, chloroflexi (photoheterotroph), one pos photobac, one pos photoeuk (didnt check heterotrophs)
 which(temp2$X1=="B3610973234fc5048dbab19dbef98d605"|temp2$X2=="B3610973234fc5048dbab19dbef98d605")#chloroflexi (photoheterotroph)
 S8fcb977d1395a10dc83007a741b8a620 - Charophyta neg with fungi and bacteria
-S0e23274231a1b7918be91d3630da6fe5 - Chlorophyta, 5 pos with hterotrophic bacteria, one pos with photosynthetic bactria
+S0e23274231a1b7918be91d3630da6fe5 - Chlorophyta, 5 pos with heterotrophic bacteria, one pos with photosynthetic bactria
 Sd4ea6eb20ce02a8c3e292634f92b2f10 - Chlorophyta, 2 pos with heterotrophic bacteria
 Sdfc413b77592c93861526de8c906369c - chlorophyta, 2 positive with htertrophic bacteria
 Sd2b04c59e082351f65cc351ef7d4ab04 - Chlorophyta 27 with het bac, 1 pos with photeuk and 1 with photobac
 S6ae4196b4456d15855bbb3b088b90e1c - Archaeplastida, 12 with het bac, 1 pos with photeuk
 S162acde9cd2e077ccdde140382ea48cd - Chlorophyta 2 with hetbac
-Se84d5f50cb74d66781cd7b44849cccdd - chlorophyta, 14 with het back
-S87c0732ac6500f25336817c21ffc153e- chlorophyta 2 with het bac
+Se84d5f50cb74d66781cd7b44849cccdd - chlorophyta 14 with het back
+S87c0732ac6500f25336817c21ffc153e - chlorophyta 2 with het bac
 Sa4906785d79edc355bd7c3048d0ed2a8 - chlorophyta 4 with het bac
 Sd329e25e43835c63a4b27ccaf2403721 - Stramenopiles/Diatomea 4 pos with het bac
 S9cfbc221cd3b50a2f192559d99142a13 - Stramenopiles/Diatomea 3 pos with het bac
 Sc45dd62d47c0618457b55cd98c0a28c1 - Stramenopiles;__Chrysophyceae 4 pos het bac
 S478bbfcf431d6dbd7438f33dc46a603e - chloroplastida (not to phylum), 1 with ht bac
+37+12+5+2+2+27+12+2+14+2+4+4+3+4+1 #all
+41+12+5+2+2+27+2+14+2+4+4+3+4 #this is how I got th original number I used
+37+12+5+2+2+27+2+14+2+4+4+3+4 #taking out uncertain taxonomy
 
 #2 pos b/t photobac, 2 pos b/t photobac and photo euk, 1 pos b/t photoeuk
 dim(temp2)
 temp2
+colorgraphlo[which(colorgraphlo$otu%in%temp),]
 colorgraphlo[which(colorgraphlo$otu%in%temp2$X1|colorgraphlo$otu%in%temp2$X2),]
-colorgraphlo[which(colorgraphlo$otu=="Bc3082be027f0efa400acd22097db7422"),]
-temp3<-myedgelistlo[which(myedgelistlo$X1=="B3610973234fc5048dbab19dbef98d605"|myedgelistlo$X2=="B3610973234fc5048dbab19dbef98d605"),]
+colorgraphlo[which(colorgraphlo$otu=="S6ae4196b4456d15855bbb3b088b90e1c"),]
+temp3<-myedgelistlo[which(myedgelistlo$X1=="S478bbfcf431d6dbd7438f33dc46a603e"|myedgelistlo$X2=="S478bbfcf431d6dbd7438f33dc46a603e"),]
 names(temp3)[1]<-"otu"
 temp3<-merge(temp3,colorgraphlo[,c(1,2)])
 #temp3<-merge(temp3,colorgraphlo[,c(1,5)])
@@ -624,9 +652,54 @@ names(temp3)[4]<-"taxstring1"
 temp3<-merge(temp3,colorgraphlo[,c(1,2)])
 #temp3<-merge(temp3,colorgraphlo[,c(1,5)])
 temp3
-length(which(temp3$weight==1&temp3$group2=="HeterotrophicBacteria"))
+length(which(temp3$weight==1&temp3$group2=="HeterotrophicBacteria"|temp3$weight==1&temp3$taxstring1=="HeterotrophicBacteria"))
 
-#counting total interations, not knowing who the connection is with
+
+temp<-colorgraphme[which(colorgraphme$group2=="PhotosyntheticBacteria"),"otu"]
+B783ef4ce2388b995de6b9b27b0c9209e cyanobacteria 6 het bacteria
+B473e2ddb973674b822b0b8544a869f74 cyanobacteria 31 het bacteria
+Bc4030127655425fbcde4a26e69b4859d chloroflexi 43 het bac, not used b/c photoheterotrohpic
+Bcbf23a259461788c7396423fe4fbf6de chloroflexi 4 , not used b/c photoheterotrohpic
+B23fcca0866f8adf23339be869a5c2f24 cyanobacteria 1
+temp<-colorgraphme[which(colorgraphme$group2=="PhotosyntheticEukaryota"),"otu"]
+S6fb7e847441f66fe0cd4eb9b74fb46eb Chlorophyta 14
+Sd329e25e43835c63a4b27ccaf2403721 diatomea 9 
+S1f590457d5e73c5eb225760a268c8fda chlorophyta 11
+S21fd2c6d01f371f0d981893bc00ed79a chlorophyta  0
+Sc14ca533c39ec57f91c0d5556164a531 chlorophyta 2
+6+31+43+4+1+14+9+11+2 #all
+6+31+1+14+9+11+2 #not using uncertain taxonomies
+
+temp2<-myedgelistme[which(myedgelistme$X1%in%temp|myedgelistme$X2%in%temp),]
+colorgraphme[which(colorgraphme$otu=="Sc14ca533c39ec57f91c0d5556164a531"),]
+temp3<-myedgelistme[which(myedgelistme$X1=="Sc14ca533c39ec57f91c0d5556164a531"|myedgelistme$X2=="Sc14ca533c39ec57f91c0d5556164a531"),]
+names(temp3)[1]<-"otu"
+temp3<-merge(temp3,colorgraphme[,c(1,2)])
+names(temp3)[1]<-"X1"
+names(temp3)[2]<-"otu"
+names(temp3)[4]<-"taxstring1"
+temp3<-merge(temp3,colorgraphme[,c(1,2)])
+temp3
+length(which((temp3$weight==1&temp3$group2=="HeterotrophicBacteria")|(temp3$weight==1&temp3$taxstring1=="HeterotrophicBacteria")))
+length(which(temp3$weight==1&temp3$group2=="HeterotrophicBacteria"))
+length(which(temp3$weight==1&temp3$taxstring1=="HeterotrophicBacteria"))
+
+temp<-colorgraphhi[which(colorgraphhi$group2=="PhotosyntheticBacteria"),"otu"]
+Bc4030127655425fbcde4a26e69b4859d
+temp2<-myedgelisthi[which(myedgelisthi$X1%in%temp|myedgelisthi$X2%in%temp),]
+colorgraphhi[which(colorgraphhi$otu=="Bc4030127655425fbcde4a26e69b4859d"),]
+temp3<-myedgelisthi[which(myedgelisthi$X1=="Bc4030127655425fbcde4a26e69b4859d"|myedgelisthi$X2=="Bc4030127655425fbcde4a26e69b4859d"),]
+names(temp3)[1]<-"otu"
+temp3<-merge(temp3,colorgraphhi[,c(1,2)])
+names(temp3)[1]<-"X1"
+names(temp3)[2]<-"otu"
+names(temp3)[4]<-"taxstring1"
+temp3<-merge(temp3,colorgraphhi[,c(1,2)])
+temp3
+length(which((temp3$weight==1&temp3$group2=="HeterotrophicBacteria")|(temp3$weight==1&temp3$taxstring1=="HeterotrophicBacteria")))
+
+
+#counting total interations, not knowing who the connection is with or pos/neg
 temp<-colorgraphlo[which(colorgraphlo$group2=="PhotosyntheticBacteria"|colorgraphlo$group2=="PhotosyntheticEukaryota"),"otu"]
 temp2<-myedgelistlo[which(myedgelistlo$X1%in%temp|myedgelistlo$X2%in%temp),]
 dim(temp2) #307 interactions
@@ -691,6 +764,61 @@ aggregate.data.frame(temp3$weight,by=list(temp3$X2c),sum)
 #subtract 26 positive interactions are between two Ktedonobacteria
 dim(myedgelistlo[which(myedgelistlo$X1%in%temp1$otu&myedgelistlo$X2%in%temp1$otu),])
 245-26
+
+temp<-colorgraphme[which(colorgraphme$group=="Bacteria"),]
+ind<-grep("Ktedonobacteria",temp$taxstring)
+temp1<-temp[ind,]
+#temp<-colorgraphlo[which(colorgraphlo$group=="Bacteria"),"otu"]
+temp2<-myedgelistme[which(myedgelistme$X1%in%temp1$otu|myedgelistme$X2%in%temp1$otu),]
+temp2
+sum(temp2$weight[temp2$weight==1])
+dim(temp2)
+colnames(temp2)[1]<-"otu"
+temp2<-merge(temp2,colorgraphme[,c(1,2)])
+colnames(temp2)[4]<-"X1c"
+colnames(temp2)[1]<-"X1"
+colnames(temp2)[2]<-"otu"
+temp2<-merge(temp2,colorgraphme[,c(1,2)])
+colnames(temp2)[5]<-"X2c"
+colnames(temp2)[1]<-"X2"
+head(temp2)
+ind<-which(temp2$X1c!="HeterotrophicBacteria")
+temp2$X2c[ind]<-temp2$X1c[ind]
+temp2$X1c[ind]<-"HeterotrophicBacteria"
+#now X2c is all the partner of the ktedonobacteria
+temp3<-temp2[which(temp2$weight==1),]
+aggregate.data.frame(temp3$weight,by=list(temp3$X2c),sum)
+#subtract 4 positive interactions are between two Ktedonobacteria
+dim(myedgelistme[which(myedgelistme$X1%in%temp1$otu&myedgelistme$X2%in%temp1$otu),])
+141-4
+
+temp<-colorgraphhi[which(colorgraphhi$group=="Bacteria"),]
+ind<-grep("Ktedonobacteria",temp$taxstring)
+temp1<-temp[ind,]
+#temp<-colorgraphlo[which(colorgraphlo$group=="Bacteria"),"otu"]
+temp2<-myedgelisthi[which(myedgelisthi$X1%in%temp1$otu|myedgelisthi$X2%in%temp1$otu),]
+temp2
+sum(temp2$weight[temp2$weight==1])
+dim(temp2)
+colnames(temp2)[1]<-"otu"
+temp2<-merge(temp2,colorgraphhi[,c(1,2)])
+colnames(temp2)[4]<-"X1c"
+colnames(temp2)[1]<-"X1"
+colnames(temp2)[2]<-"otu"
+temp2<-merge(temp2,colorgraphhi[,c(1,2)])
+colnames(temp2)[5]<-"X2c"
+colnames(temp2)[1]<-"X2"
+head(temp2)
+ind<-which(temp2$X1c!="HeterotrophicBacteria")
+temp2$X2c[ind]<-temp2$X1c[ind]
+temp2$X1c[ind]<-"HeterotrophicBacteria"
+#now X2c is all the partner of the ktedonobacteria
+temp3<-temp2[which(temp2$weight==1),]
+aggregate.data.frame(temp3$weight,by=list(temp3$X2c),sum)
+#subtract 1 positive interactions are between two Ktedonobacteria
+dim(myedgelisthi[which(myedgelisthi$X1%in%temp1$otu&myedgelisthi$X2%in%temp1$otu),])
+26-1
+
 
 #high
 temp<-colorgraphhi[which(colorgraphhi$group=="Fungi"),]

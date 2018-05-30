@@ -172,7 +172,7 @@ awk '{print length}' dna-sequences.fasta | sort | uniq -c
 #USE THIS
 qiime tools export \
 ref-seqs_all_unique_SILVA111.qza \
---output-dir exported-ref-seqs_all_unique_SILVA111.qza
+--output-dir exported-ref-seqs_all_unique_SILVA111
 
 awk '{print length}' dna-sequences.fasta | sort | uniq -c
 
