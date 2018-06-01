@@ -1,4 +1,4 @@
-##Diversity
+##### Phylogenetic Diversity #####
 
 #pd16S<-pd(as.matrix(datBacr3fotu[,-c(1:31)]),phy_tree(datBac3f),include.root=TRUE)
 pdBac$X.SampleID<-rownames(pdBac)
@@ -114,4 +114,99 @@ ggplot(richmeans,aes(x=lomehi,y=mean,group=1))+
 
 
 
+
+##### Species richness #####
+
+#pd16S<-pd(as.matrix(datBacr3fotu[,-c(1:31)]),phy_tree(datBac3f),include.root=TRUE)
+pdBac$X.SampleID<-rownames(pdBac)
+pdBac2<-merge(pdBac,biogeo6,"X.SampleID")
+pdBac2$type<-"1Bacteria"
+
+richITS$X.SampleID<-rownames(richITS)
+richITS2<-merge(richITS,biogeo6,"X.SampleID")
+richITS2$type<-"2Fungi"
+
+pdEukS$X.SampleID<-rownames(pdEukS)
+pdEukS2<-merge(pdEukS,biogeo6,"X.SampleID")
+pdEukS2$type<-"3Small Eukaryotes"
+
+pdEukN$X.SampleID<-rownames(pdEukN)
+pdEukN$X.SampleID<-gsub(pattern = "N", replace = "S", x = pdEukN$X.SampleID)
+pdEukN2<-merge(pdEukN,biogeo6,"X.SampleID")
+pdEukN2$type<-"4Soil Mesofauna"
+
+
+richdata<-rbind(pdBac2,richITS2,pdEukS2,pdEukN2)
+
+richmeans<-richdata%>%
+  group_by(type,lomehi)%>%
+  summarise(mean=mean(SR),se=std.error(SR))
+richmeans$lomehi<-factor(richmeans$lomehi,levels=c("lo","me","hi"))
+
+#pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/richnessbysuccessionalstage.pdf",width=3.386,height=3.386) #width=3.386 or 7
+ggplot(richmeans,aes(x=lomehi,y=mean,group=type))+
+  labs(x = "",y="Taxonomic Richness")+
+  theme_classic()+
+  theme(line=element_line(size=.3),text=element_text(size=10),strip.background = element_rect(colour="white", fill="white"),axis.line=element_line(color="gray30",size=.3),legend.key.size = unit(.6, "line"))+
+  geom_line(stat = "identity", position = "identity",size=.4)+#.5
+  geom_point(size=1.5)+#2
+  geom_errorbar(aes(ymax = mean+se, ymin=mean-se),width=.15,size=.4)+#.5
+  #scale_color_manual(values=mycols) +
+  facet_wrap(~type,nrow=3,scales="free")+
+  guides(col = guide_legend(ncol = 1))
+dev.off()
+
+
+anova(lm(SR~lomehi,data=pdBac2))
+anova(lm(SR~lomehi,data=richITS2))
+anova(lm(SR~lomehi,data=pdEukS2))
+anova(lm(SR~lomehi,data=pdEukN2))
+
+
+
+
+
+##### Evenness #####
+
+pdBac$Evenness<-vegan::diversity(datBacS3cotu[,-c(1:31)])/log(specnumber(datBacS3cotu[,-c(1:31)]))
+pdBac2<-merge(pdBac,biogeo6,"X.SampleID")
+pdBac2$type<-"1Bacteria"
+
+richITS$Evenness<-vegan::diversity(datITSS3cotu[,-c(1:31)])/log(specnumber(datITSS3cotu[,-c(1:31)]))
+richITS2<-merge(richITS,biogeo6,"X.SampleID")
+richITS2$type<-"2Fungi"
+
+pdEukS$Evenness<-vegan::diversity(datEukS3cotu[,-c(1:31)])/log(specnumber(datEukS3cotu[,-c(1:31)]))
+pdEukS2<-merge(pdEukS,biogeo6,"X.SampleID")
+pdEukS2$type<-"3Small Eukaryotes"
+
+pdEukN$Evenness<-vegan::diversity(datEukN3cotu[,-c(1:31)])/log(specnumber(datEukN3cotu[,-c(1:31)]))
+pdEukN2<-merge(pdEukN,biogeo6,"X.SampleID")
+pdEukN2$type<-"4Soil Mesofauna"
+
+richdata<-rbind(pdBac2,richITS2,pdEukS2,pdEukN2)
+
+richmeans<-richdata%>%
+  group_by(type,lomehi)%>%
+  summarise(mean=mean(Evenness,na.rm=T),se=std.error(Evenness,na.rm=T))
+richmeans$lomehi<-factor(richmeans$lomehi,levels=c("lo","me","hi"))
+
+#pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/Niwot_King/Figures&Stats/kingdata/Figs/evennessbysuccessionalstage.pdf",width=3.386,height=3.386) #width=3.386 or 7
+ggplot(richmeans,aes(x=lomehi,y=mean,group=type))+
+  labs(x = "",y="Evenness")+
+  theme_classic()+
+  theme(line=element_line(size=.3),text=element_text(size=10),strip.background = element_rect(colour="white", fill="white"),axis.line=element_line(color="gray30",size=.3),legend.key.size = unit(.6, "line"))+
+  geom_line(stat = "identity", position = "identity",size=.4)+#.5
+  geom_point(size=1.5)+#2
+  geom_errorbar(aes(ymax = mean+se, ymin=mean-se),width=.15,size=.4)+#.5
+  #scale_color_manual(values=mycols) +
+  facet_wrap(~type,nrow=3,scales="free")+
+  guides(col = guide_legend(ncol = 1))
+dev.off()
+
+
+anova(lm(Evenness~lomehi,data=pdBac2))
+anova(lm(Evenness~lomehi,data=richITS2))
+anova(lm(Evenness~lomehi,data=pdEukS2))
+anova(lm(Evenness~lomehi,data=pdEukN2))
 
